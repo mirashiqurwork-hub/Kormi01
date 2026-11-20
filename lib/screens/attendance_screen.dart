@@ -1,10 +1,9 @@
-// Attendance Screen - হাজিরা
-// সুপারফাস্ট: শুধু আজকের + নিজের Unit + Shift দেখাবে।
-// কার্ড নম্বর আগে, তারপর নাম।
+// KORMI - Attendance Screen
+// ড্যাশবোর্ড -> Attendance কার্ডে চাপ দিলে এই পেজ খুলবে
+// Present / Absent + OCR ক্যামেরা (Gallery / Take Photo)
 
 import 'package:flutter/material.dart';
-import '../database/kormi_database.dart';
-import '../widgets/ocr_camera_button.dart';
+import '../theme/kormi_theme.dart';
 
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
@@ -14,194 +13,252 @@ class AttendanceScreen extends StatefulWidget {
 }
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
-  final _db = KormiDatabase();
+  String _shift = 'P/B';
+  String _search = '';
+  DateTime _date = DateTime.now();
 
-  // আজকের তারিখ, পরে ক্যালেন্ডার থেকে বদলানো যাবে
-  String _date = '2026-11-21';
-  List<Map> _workers = []; // শ্রমিকের লিস্ট
-  Map<String, String> _status = {}; // কার্ড নম্বর -> Present / Absent / Off
+  // ডেমো ডাটা - পরে আসল ডাটাবেজ থেকে আসবে
+  final Map<String, String> _status = {
+    'W-104': 'Present',
+    'W-105': 'Present',
+    'W-106': 'Absent',
+    'W-107': 'Present',
+    'W-108': 'Present',
+  };
 
-  // পরে লগইন থেকে আসবে, এখন ডেমোর জন্য
-  final String _myRole = 'Officer';
-  final String _myUnit = '1';
-  final String _myShift = 'A';
-  final String _myCompanyId = 'company_1';
+  final List<Map<String, String>> _workers = [
+    {'name': 'Md. Rahim Mia', 'id': 'W-104', 'desg': 'OP', 'section': 'RING'},
+    {'name': 'Fatema Begum', 'id': 'W-105', 'desg': 'HELPER', 'section': 'PACKING'},
+    {'name': 'Rashedul Karim', 'id': 'W-106', 'desg': 'JR.A.OP', 'section': 'BACKSIDE'},
+    {'name': 'Kamrul Hasan', 'id': 'W-107', 'desg': 'SR.HELPER', 'section': 'AUTOCONE'},
+    {'name': 'Nasrin Akter', 'id': 'W-108', 'desg': 'LINE-MAN', 'section': 'RING'},
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadWorkers();
+  List<Map<String, String>> get _filtered {
+    return _workers.where((w) {
+      if (_search.isEmpty) return true;
+      return w['name']!.toLowerCase().contains(_search.toLowerCase()) ||
+          w['id']!.toLowerCase().contains(_search.toLowerCase());
+    }).toList();
   }
 
-  // শ্রমিক লোড করা
-  void _loadWorkers() {
-    final workers = _db.getWorkers(
-      myRole: _myRole,
-      myUnit: _myUnit,
-      myShift: _myShift,
-      myCompanyId: _myCompanyId,
+  int get _presentCount => _status.values.where((v) => v == 'Present').length;
+
+  // OCR - ক্যামেরা আইকনে চাপ দিলে ২টা অপশন
+  void _showOcrOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            const Text('Attendance OCR', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: KormiColors.navy)),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: KormiColors.navy),
+              title: const Text('Select Photo from Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Gallery থেকে ছবি সিলেক্ট করুন')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: KormiColors.navy),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('ক্যামেরা দিয়ে ছবি তুলুন')),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
     );
+  }
+
+  void _toggleStatus(String id) {
     setState(() {
-      _workers = workers;
-      // প্রথমে সবাইকে Absent ধরে নিই, পরে Present টিক দিবো
-      // তুমি যেভাবে বলছিলা, Present List দিলে বাকিরা Absent হয়ে যাবে
-      for (var w in workers) {
-        _status[w['cardNumber'].toString()] ??= 'Absent';
-      }
+      _status[id] = _status[id] == 'Present' ? 'Absent' : 'Present';
     });
-  }
-
-  // হাজিরা সেভ করা
-  Future<void> _saveAttendance() async {
-    for (var w in _workers) {
-      final card = w['cardNumber'].toString();
-      await _db.saveAttendance({
-        'date': _date,
-        'cardNumber': card,
-        'name': w['name'],
-        'companyId': _myCompanyId,
-        'unit': _myUnit,
-        'shift': _myShift,
-        'status': _status[card] ?? 'Absent', // Present / Absent / Off
-      });
-    }
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('হাজিরা সেভ হয়ে গেছে')),
-      );
-    }
-  }
-
-  // একটা বাটনের রঙ ঠিক করা
-  Color _getColor(String status, String btn) {
-    if (status == btn) {
-      if (btn == 'Present') return Colors.green;
-      if (btn == 'Absent') return Colors.red;
-      if (btn == 'Off') return Colors.grey;
-    }
-    return Colors.white24;
   }
 
   @override
   Widget build(BuildContext context) {
-    // আজকে কতজন হাজির, গুনে দেখাই
-    final presentCount = _status.values.where((s) => s == 'Present').length;
-
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A2F),
+      backgroundColor: KormiColors.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A1A2F),
-        title: const Text(
-          'হাজিরা',
-          style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
+        backgroundColor: KormiColors.navy,
+        foregroundColor: KormiColors.goldLight,
+        title: const Text('Attendance'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.camera_alt_outlined),
+            onPressed: _showOcrOptions,
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // উপরে তারিখ + মোট হাজির
+          // তারিখ + শিফট
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'তারিখ: $_date',
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+            padding: const EdgeInsets.all(14),
+            child: KormiCard(
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Date: ${_date.day}/${_date.month}/${_date.year}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 15),
+                      ),
+                      GestureDetector(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _date,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now().add(const Duration(days: 30)),
+                          );
+                          if (picked != null) setState(() => _date = picked);
+                        },
+                        child: const Row(
+                          children: [
+                            Icon(Icons.calendar_today_outlined, size: 18, color: KormiColors.navy),
+                            SizedBox(width: 6),
+                            Text('Change', style: TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Text(
-                  'হাজির: $presentCount জন',
-                  style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Row(
+                    children: ['P/A', 'P/B', 'P/C'].map((s) {
+                      final active = _shift == s;
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: GestureDetector(
+                            onTap: () => setState(() => _shift = s),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: active ? KormiColors.navy : Colors.white,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(color: KormiColors.border),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  s,
+                                  style: TextStyle(
+                                    color: active ? KormiColors.goldLight : KormiColors.navy,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Present: $_presentCount / ${_workers.length}',
+                          style: const TextStyle(color: KormiColors.textGrey, fontSize: 13),
+                        ),
+                      ),
+                      Text(
+                        'Shift: $_shift',
+                        style: const TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-
-          // OCR ২টা বাটন - Absent List + Present List
+          // সার্চ
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OcrCameraButton(
-                    label: 'Absent List OCR',
-                    onImagePicked: (image) {
-                      if (image != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Absent List ছবি পেয়েছি')),
-                        );
-                      }
-                    },
-                  ),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: TextField(
+              onChanged: (v) => setState(() => _search = v),
+              decoration: InputDecoration(
+                hintText: 'Search Name / Card ID',
+                prefixIcon: const Icon(Icons.search, color: KormiColors.textGrey),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: const BorderSide(color: KormiColors.border),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OcrCameraButton(
-                    label: 'Present List OCR',
-                    onImagePicked: (image) {
-                      if (image != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Present List ছবি পেয়েছি')),
-                        );
-                      }
-                    },
-                  ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: const BorderSide(color: KormiColors.border),
                 ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 10),
-
-          // শ্রমিকের লিস্ট
+          const SizedBox(height: 12),
+          // লিস্ট
           Expanded(
             child: ListView.builder(
-              itemCount: _workers.length,
-              itemBuilder: (context, index) {
-                final w = _workers[index];
-                final card = w['cardNumber'].toString();
-                final status = _status[card] ?? 'Absent';
-
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              itemCount: _filtered.length,
+              itemBuilder: (context, i) {
+                final w = _filtered[i];
+                final status = _status[w['id']] ?? 'Absent';
+                final isPresent = status == 'Present';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: KormiCard(
+                    child: Row(
                       children: [
-                        // কার্ড নম্বর আগে, তারপর নাম
-                        Text(
-                          '$card - ${w['name']}',
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                        CircleAvatar(
+                          backgroundColor: KormiColors.navy,
+                          child: Text(
+                            w['name']!.substring(0, 1),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        // ৩টা বাটন - হাজির / অনুপস্থিত / ছুটি
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: _getColor(status, 'Present')),
-                                onPressed: () => setState(() => _status[card] = 'Present'),
-                                child: const Text('হাজির', style: TextStyle(color: Colors.white)),
-                              ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(w['name']!, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy)),
+                              Text('${w['id']} • ${w['desg']} • ${w['section']}',
+                                  style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => _toggleStatus(w['id']!),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isPresent ? KormiColors.green : KormiColors.red,
+                              borderRadius: BorderRadius.circular(30),
                             ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: _getColor(status, 'Absent')),
-                                onPressed: () => setState(() => _status[card] = 'Absent'),
-                                child: const Text('অনুপস্থিত', style: TextStyle(color: Colors.white)),
-                              ),
+                            child: Text(
+                              status,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                             ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: _getColor(status, 'Off')),
-                                onPressed: () => setState(() => _status[card] = 'Off'),
-                                child: const Text('ছুটি', style: TextStyle(color: Colors.white)),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -210,21 +267,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               },
             ),
           ),
-
-          // নিচে বড় সেভ বাটন
+          // সেভ
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37)),
-                onPressed: _saveAttendance,
-                child: const Text(
-                  'হাজিরা সেভ করুন',
-                  style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
+            padding: const EdgeInsets.all(14),
+            child: KormiPrimaryButton(
+              label: 'Save Attendance',
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Attendance Saved - Present $_presentCount, Shift $_shift')),
+                );
+              },
             ),
           ),
         ],
