@@ -1,6 +1,5 @@
-// KORMI - Attendance Screen
-// ড্যাশবোর্ড -> Attendance কার্ডে চাপ দিলে এই পেজ খুলবে
-// Present / Absent + OCR ক্যামেরা (Gallery / Take Photo)
+// KORMI - Attendance Screen - REAL ACTION
+// Check-In / Check-Out + Present / Absent / Late + Real Summary
 
 import 'package:flutter/material.dart';
 import '../theme/kormi_theme.dart';
@@ -13,82 +12,122 @@ class AttendanceScreen extends StatefulWidget {
 }
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
-  String _shift = 'P/B';
-  String _search = '';
-  DateTime _date = DateTime.now();
+  String _date = '18.11.26';
+  String _shift = 'P/B-R/C';
+  String _filter = 'All';
+  final _searchController = TextEditingController();
 
-  // ডেমো ডাটা - পরে আসল ডাটাবেজ থেকে আসবে
+  // Real Attendance State - Card -> Status
+  // Status: Present / Absent / Late / Leave / Not Marked
   final Map<String, String> _status = {
-    'W-104': 'Present',
-    'W-105': 'Present',
-    'W-106': 'Absent',
-    'W-107': 'Present',
-    'W-108': 'Present',
+    'K-1041': 'Present',
+    'K-1042': 'Present',
+    'K-1043': 'Late',
+    'K-1045': 'Absent',
+  };
+
+  final Map<String, String> _checkIn = {
+    'K-1041': '08:02 AM',
+    'K-1042': '08:00 AM',
+    'K-1043': '08:35 AM',
   };
 
   final List<Map<String, String>> _workers = [
-    {'name': 'Md. Rahim Mia', 'id': 'W-104', 'desg': 'OP', 'section': 'RING'},
-    {'name': 'Fatema Begum', 'id': 'W-105', 'desg': 'HELPER', 'section': 'PACKING'},
-    {'name': 'Rashedul Karim', 'id': 'W-106', 'desg': 'JR.A.OP', 'section': 'BACKSIDE'},
-    {'name': 'Kamrul Hasan', 'id': 'W-107', 'desg': 'SR.HELPER', 'section': 'AUTOCONE'},
-    {'name': 'Nasrin Akter', 'id': 'W-108', 'desg': 'LINE-MAN', 'section': 'RING'},
+    {'card': 'K-1041', 'name': 'Rahim Uddin', 'role': 'Shift Incharge - P/B', 'section': 'RING'},
+    {'card': 'K-1042', 'name': 'Karim Sheikh', 'role': 'Worker - Ring', 'section': 'RING'},
+    {'card': 'K-1043', 'name': 'Nasir Ahmed', 'role': 'Officer - Production', 'section': 'BACKSIDE'},
+    {'card': 'K-1045', 'name': 'Jashim Uddin', 'role': 'Worker - Packing', 'section': 'PACKING'},
+    {'card': 'K-1046', 'name': 'Mizanur Rahman', 'role': 'Helper - Autocone', 'section': 'AUTOCONE'},
+    {'card': 'K-1047', 'name': 'Abdul Kader', 'role': 'OP - Ring', 'section': 'RING'},
   ];
 
-  List<Map<String, String>> get _filtered {
-    return _workers.where((w) {
-      if (_search.isEmpty) return true;
-      return w['name']!.toLowerCase().contains(_search.toLowerCase()) ||
-          w['id']!.toLowerCase().contains(_search.toLowerCase());
-    }).toList();
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  int get _presentCount => _status.values.where((v) => v == 'Present').length;
+  String _statusOf(String card) => _status[card] ?? 'Not Marked';
 
-  // OCR - ক্যামেরা আইকনে চাপ দিলে ২টা অপশন
-  void _showOcrOptions() {
+  int get _present => _workers.where((w) => _statusOf(w['card']!) == 'Present' || _statusOf(w['card']!) == 'Late').length;
+  int get _absent => _workers.where((w) => _statusOf(w['card']!) == 'Absent').length;
+  int get _late => _workers.where((w) => _statusOf(w['card']!) == 'Late').length;
+  int get _notMarked => _workers.where((w) => _statusOf(w['card']!) == 'Not Marked').length;
+
+  List<Map<String, String>> get _filtered {
+    var list = _workers;
+    if (_filter == 'Present') list = list.where((w) => _statusOf(w['card']!) == 'Present').toList();
+    if (_filter == 'Late') list = list.where((w) => _statusOf(w['card']!) == 'Late').toList();
+    if (_filter == 'Absent') list = list.where((w) => _statusOf(w['card']!) == 'Absent').toList();
+    if (_filter == 'Not Marked') list = list.where((w) => _statusOf(w['card']!) == 'Not Marked').toList();
+    final q = _searchController.text.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      list = list.where((w) => w['name']!.toLowerCase().contains(q) || w['card']!.toLowerCase().contains(q)).toList();
+    }
+    return list;
+  }
+
+  void _mark(String card, String status) {
+    setState(() {
+      _status[card] = status;
+      if (status == 'Present' && !_checkIn.containsKey(card)) {
+        _checkIn[card] = '08:00 AM';
+      }
+      if (status == 'Late' && !_checkIn.containsKey(card)) {
+        _checkIn[card] = '08:35 AM';
+      }
+      if (status == 'Absent') {
+        _checkIn.remove(card);
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$card - $status')));
+  }
+
+  void _markAllPresent() {
+    setState(() {
+      for (final w in _workers) {
+        if (_statusOf(w['card']!) == 'Not Marked') {
+          _status[w['card']!] = 'Present';
+          _checkIn[w['card']!] = '08:00 AM';
+        }
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('সব Not Marked কে Present করা হয়েছে')));
+  }
+
+  void _showMarkSheet(String card, String name) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
-            const Text('Attendance OCR', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: KormiColors.navy)),
+            Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: KormiColors.navy)),
+            Text('Card: $card • Shift: $_shift', style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
             const SizedBox(height: 12),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined, color: KormiColors.navy),
-              title: const Text('Select Photo from Gallery'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Gallery থেকে ছবি সিলেক্ট করুন')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt_outlined, color: KormiColors.navy),
-              title: const Text('Take Photo'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('ক্যামেরা দিয়ে ছবি তুলুন')),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
+            ...['Present', 'Late', 'Absent', 'Leave'].map((s) => ListTile(
+                  leading: Icon(s == 'Present' ? Icons.check_circle_outline : s == 'Late' ? Icons.schedule_outlined : s == 'Absent' ? Icons.cancel_outlined : Icons.event_busy_outlined, color: KormiColors.navy),
+                  title: Text(s),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _mark(card, s);
+                  },
+                )),
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 
-  void _toggleStatus(String id) {
-    setState(() {
-      _status[id] = _status[id] == 'Present' ? 'Absent' : 'Present';
-    });
+  Color _statusColor(String s) {
+    if (s == 'Present') return KormiColors.green;
+    if (s == 'Late') return KormiColors.gold;
+    if (s == 'Absent') return KormiColors.red;
+    if (s == 'Leave') return KormiColors.textGrey;
+    return KormiColors.textGrey;
   }
 
   @override
@@ -100,186 +139,163 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         foregroundColor: KormiColors.goldLight,
         title: const Text('Attendance'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.camera_alt_outlined),
-            onPressed: _showOcrOptions,
-          ),
+          IconButton(icon: const Icon(Icons.done_all_outlined), onPressed: _markAllPresent),
         ],
       ),
-      body: Column(
-        children: [
-          // তারিখ + শিফট
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: KormiCard(
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Date: ${_date.day}/${_date.month}/${_date.year}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 15),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: KormiColors.border)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _shift,
+                        isExpanded: true,
+                        items: ['P/A', 'P/B', 'P/B-R/C', 'P/C'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        onChanged: (v) => setState(() => _shift = v!),
                       ),
-                      GestureDetector(
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _date,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime.now().add(const Duration(days: 30)),
-                          );
-                          if (picked != null) setState(() => _date = picked);
-                        },
-                        child: const Row(
-                          children: [
-                            Icon(Icons.calendar_today_outlined, size: 18, color: KormiColors.navy),
-                            SizedBox(width: 6),
-                            Text('Change', style: TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: ['P/A', 'P/B', 'P/C'].map((s) {
-                      final active = _shift == s;
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: GestureDetector(
-                            onTap: () => setState(() => _shift = s),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(
-                                color: active ? KormiColors.navy : Colors.white,
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: KormiColors.border),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  s,
-                                  style: TextStyle(
-                                    color: active ? KormiColors.goldLight : KormiColors.navy,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Present: $_presentCount / ${_workers.length}',
-                          style: const TextStyle(color: KormiColors.textGrey, fontSize: 13),
-                        ),
-                      ),
-                      Text(
-                        'Shift: $_shift',
-                        style: const TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: KormiColors.border)),
+                  child: Text(_date, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy)),
+                ),
+              ],
             ),
-          ),
-          // সার্চ
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: TextField(
-              onChanged: (v) => setState(() => _search = v),
+            const SizedBox(height: 12),
+            // Summary - Real Count
+            Row(
+              children: [
+                Expanded(child: _summaryCard('Present', '$_present', KormiColors.green)),
+                const SizedBox(width: 8),
+                Expanded(child: _summaryCard('Absent', '$_absent', KormiColors.red)),
+                const SizedBox(width: 8),
+                Expanded(child: _summaryCard('Late', '$_late', KormiColors.gold)),
+                const SizedBox(width: 8),
+                Expanded(child: _summaryCard('Pending', '$_notMarked', KormiColors.textGrey)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                hintText: 'Search Name / Card ID',
-                prefixIcon: const Icon(Icons.search, color: KormiColors.textGrey),
+                hintText: 'Search by Name / Card...',
+                prefixIcon: const Icon(Icons.search_outlined, color: KormiColors.textGrey),
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(vertical: 13),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: const BorderSide(color: KormiColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: const BorderSide(color: KormiColors.border),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: KormiColors.border)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: KormiColors.border)),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          // লিস্ট
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              itemCount: _filtered.length,
-              itemBuilder: (context, i) {
-                final w = _filtered[i];
-                final status = _status[w['id']] ?? 'Absent';
-                final isPresent = status == 'Present';
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: KormiCard(
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: KormiColors.navy,
-                          child: Text(
-                            w['name']!.substring(0, 1),
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: ['All', 'Present', 'Late', 'Absent', 'Not Marked'].map((f) {
+                  final active = _filter == f;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _filter = f),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(color: active ? KormiColors.navy : Colors.white, borderRadius: BorderRadius.circular(30), border: Border.all(color: KormiColors.border)),
+                        child: Text(f, style: TextStyle(color: active ? KormiColors.goldLight : KormiColors.navy, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ..._filtered.map((w) {
+              final card = w['card']!;
+              final status = _statusOf(card);
+              final checkIn = _checkIn[card] ?? '--:--';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: KormiCard(
+                  onTap: () => _showMarkSheet(card, w['name']!),
+                  child: Row(
+                    children: [
+                      CircleAvatar(backgroundColor: KormiColors.navy.withOpacity(0.1), child: Text(w['name']![0], style: const TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold))),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${w['name']} • $card', style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 14)),
+                            Text('${w['role']} • ${w['section']}', style: const TextStyle(color: KormiColors.textGrey, fontSize: 11)),
+                            Text('Check-In: $checkIn', style: const TextStyle(color: KormiColors.navy, fontSize: 12)),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: _statusColor(status).withOpacity(0.12), borderRadius: BorderRadius.circular(20)), child: Text(status, style: TextStyle(color: _statusColor(status), fontWeight: FontWeight.bold, fontSize: 11))),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(w['name']!, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy)),
-                              Text('${w['id']} • ${w['desg']} • ${w['section']}',
-                                  style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+                              _quickBtn('P', () => _mark(card, 'Present'), KormiColors.green),
+                              const SizedBox(width: 4),
+                              _quickBtn('A', () => _mark(card, 'Absent'), KormiColors.red),
                             ],
                           ),
-                        ),
-                        GestureDetector(
-                          onTap: () => _toggleStatus(w['id']!),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isPresent ? KormiColors.green : KormiColors.red,
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Text(
-                              status,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          ),
-          // সেভ
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: KormiPrimaryButton(
-              label: 'Save Attendance',
+                ),
+              );
+            }),
+            const SizedBox(height: 8),
+            KormiPrimaryButton(
+              label: 'Save Attendance - $_shift • $_date',
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Attendance Saved - Present $_presentCount, Shift $_shift')),
-                );
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved - Present: $_present, Absent: $_absent, Late: $_late, Pending: $_notMarked')));
               },
             ),
-          ),
+            const SizedBox(height: 8),
+            const Text('Present + Late = Working, Absent = Salary থেকে কাটবে।', textAlign: TextAlign.center, style: TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryCard(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: KormiColors.border)),
+      child: Column(
+        children: [
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 18)),
+          Text(label, style: const TextStyle(color: KormiColors.textGrey, fontSize: 11)),
         ],
+      ),
+    );
+  }
+
+  Widget _quickBtn(String label, VoidCallback onTap, Color color) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: Center(child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
       ),
     );
   }
