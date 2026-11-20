@@ -1,7 +1,8 @@
-// Messages Screen - মেসেজ
-// WhatsApp এর মতো। ১-১ + গ্রুপ, টেক্সট, ভয়েস, ছবি, ফাইল।
+// KORMI - Messages Screen
+// Conversation List + Chat View (একই ফাইলে)
 
 import 'package:flutter/material.dart';
+import '../theme/kormi_theme.dart';
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
@@ -11,152 +12,234 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
-  // ডেমো চ্যাট লিস্ট
-  List<Map<String, String>> _chats = [
-    {'name': '১ নম্বর ইউনিট গ্রুপ', 'last': 'আজকের প্রোডাকশন ১২০০ কেজি', 'time': '১০:৩০', 'online': 'true'},
-    {'name': 'ফাতেমা আক্তার', 'last': 'স্যার, কাল ছুটি লাগবে', 'time': '০৯:১৫', 'online': 'false'},
-    {'name': 'রিং সেকশন গ্রুপ', 'last': 'মেশিন ৫ বন্ধ আছে', 'time': '০৮:৪০', 'online': 'true'},
+  final _searchController = TextEditingController();
+  String _filter = 'All';
+
+  final List<Map<String, dynamic>> _conversations = [
+    {
+      'name': 'Tariqul Islam',
+      'role': 'CHIEF MILL ADMINISTRATOR',
+      'msg': 'Production summary পাঠিয়ে দিয়েছি, দেখে নিন',
+      'time': '10:42 AM',
+      'unread': 2,
+      'online': true,
+      'color': KormiColors.navy,
+    },
+    {
+      'name': 'Rahim Uddin',
+      'role': 'Shift Incharge - P/B',
+      'msg': 'RF-14 breakdown resolved, 45 min down ছিল',
+      'time': '09:15 AM',
+      'unread': 0,
+      'online': true,
+      'color': KormiColors.green,
+    },
+    {
+      'name': 'Karim Sheikh',
+      'role': 'Worker - Ring Section',
+      'msg': 'স্যার, আগামীকাল ছুটি লাগবে',
+      'time': 'Yesterday',
+      'unread': 1,
+      'online': false,
+      'color': KormiColors.gold,
+    },
+    {
+      'name': 'Nasir Ahmed',
+      'role': 'Officer - Production',
+      'msg': 'Manpower report ready, Unit 1 full আছে',
+      'time': 'Yesterday',
+      'unread': 0,
+      'online': false,
+      'color': KormiColors.textGrey,
+    },
+    {
+      'name': 'Admin Group',
+      'role': 'Management Group • 8 members',
+      'msg': 'Tariqul: আগামীকাল মিটিং 10টায়',
+      'time': 'Mon',
+      'unread': 0,
+      'online': false,
+      'color': KormiColors.navy,
+      'isGroup': true,
+    },
   ];
 
-  // চ্যাটের ভিতরে মেসেজ
-  List<Map<String, dynamic>> _messages = [
-    {'text': 'আসসালামু আলাইকুম, আজকের প্রোডাকশন কত?', 'isMe': false, 'tick': 'read'},
-    {'text': '১২০০ কেজি হইছে', 'isMe': true, 'tick': 'read'},
-  ];
-
-  final _controller = TextEditingController();
-  bool _isTyping = false;
-  String _selectedChat = '';
-
-  void _openChat(String name) {
-    setState(() => _selectedChat = name);
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  void _sendMessage() {
-    if (_controller.text.trim().isEmpty) return;
-    setState(() {
-      _messages.add({'text': _controller.text.trim(), 'isMe': true, 'tick': 'sent'});
-      _controller.clear();
-    });
-  }
-
-  // টিক চিহ্ন: ১টা = Sent, ২টা = Delivered, ২টা নীল = Read
-  Widget _tickIcon(String tick) {
-    if (tick == 'sent') {
-      return const Icon(Icons.check, size: 16, color: Colors.grey);
+  List<Map<String, dynamic>> get _filtered {
+    var list = _conversations;
+    if (_filter == 'Unread') {
+      list = list.where((e) => (e['unread'] as int) > 0).toList();
     }
-    if (tick == 'read') {
-      return const Icon(Icons.done_all, size: 16, color: Colors.blue);
+    final q = _searchController.text.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      list = list.where((e) => (e['name'] as String).toLowerCase().contains(q)).toList();
     }
-    return const Icon(Icons.done_all, size: 16, color: Colors.grey);
+    return list;
   }
 
   @override
   Widget build(BuildContext context) {
-    // যদি কোনো চ্যাট খোলা না থাকে, লিস্ট দেখাবো
-    if (_selectedChat.isEmpty) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF0A1A2F),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF0A1A2F),
-          title: const Text(
-            'মেসেজ',
-            style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
-          ),
-          centerTitle: true,
-        ),
-        body: ListView.builder(
-          itemCount: _chats.length,
-          itemBuilder: (context, index) {
-            final c = _chats[index];
-            final online = c['online'] == 'true';
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: const Color(0xFFD4AF37),
-                  child: Text(
-                    c['name']!.substring(0, 1),
-                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                title: Text(c['name']!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(c['last']!),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(c['time']!, style: const TextStyle(fontSize: 12)),
-                    const SizedBox(height: 4),
-                    Text(
-                      online ? 'Online' : 'Offline',
-                      style: TextStyle(fontSize: 12, color: online ? Colors.green : Colors.grey),
-                    ),
-                  ],
-                ),
-                onTap: () => _openChat(c['name']!),
-              ),
-            );
-          },
-        ),
-        floatingActionButton: FloatingActionButton(
-          backgroundColor: const Color(0xFFD4AF37),
-          onPressed: () {},
-          child: const Icon(Icons.message, color: Colors.black),
-        ),
-      );
-    }
-
-    // চ্যাট খোলা থাকলে, চ্যাট স্ক্রিন দেখাবো, মেসেজ নিচ থেকে শুরু হবে
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A2F),
+      backgroundColor: KormiColors.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A1A2F),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => setState(() => _selectedChat = ''),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(_selectedChat, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
-            const Text('Online', style: TextStyle(color: Colors.green, fontSize: 12)),
-          ],
-        ),
+        backgroundColor: KormiColors.navy,
+        foregroundColor: KormiColors.goldLight,
+        title: const Text('Messages'),
         actions: [
-          IconButton(icon: const Icon(Icons.call, color: Colors.white), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.videocam, color: Colors.white), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.edit_square),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('New Message - Worker / Officer সিলেক্ট করুন')),
+              );
+            },
+          ),
         ],
       ),
       body: Column(
         children: [
+          // Search
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                hintText: 'Search messages...',
+                prefixIcon: const Icon(Icons.search_outlined, color: KormiColors.textGrey),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: const BorderSide(color: KormiColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: const BorderSide(color: KormiColors.border),
+                ),
+              ),
+            ),
+          ),
+          // Filter chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              children: ['All', 'Unread', 'Groups', 'Workers'].map((f) {
+                final active = _filter == f;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _filter = f),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: active ? KormiColors.navy : Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: KormiColors.border),
+                      ),
+                      child: Text(
+                        f,
+                        style: TextStyle(
+                          color: active ? KormiColors.goldLight : KormiColors.navy,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 10),
           Expanded(
             child: ListView.builder(
-              reverse: false,
-              padding: const EdgeInsets.all(12),
-              itemCount: _messages.length,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              itemCount: _filtered.length,
               itemBuilder: (context, index) {
-                final m = _messages[index];
-                final isMe = m['isMe'] as bool;
-                return Align(
-                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isMe ? const Color(0xFFD4AF37) : Colors.white12,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                final c = _filtered[index];
+                final unread = c['unread'] as int;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: KormiCard(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => _ChatPage(name: c['name'], role: c['role']),
+                        ),
+                      );
+                    },
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Flexible(
-                          child: Text(
-                            m['text'],
-                            style: TextStyle(color: isMe ? Colors.black : Colors.white, fontSize: 16),
+                        Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 26,
+                              backgroundColor: (c['color'] as Color).withOpacity(0.15),
+                              child: Text(
+                                (c['name'] as String)[0],
+                                style: TextStyle(fontWeight: FontWeight.bold, color: c['color'] as Color, fontSize: 20),
+                              ),
+                            ),
+                            if (c['online'] == true)
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: KormiColors.green,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(c['name'], style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 15)),
+                              Text(c['role'], style: const TextStyle(color: KormiColors.textGrey, fontSize: 11)),
+                              const SizedBox(height: 2),
+                              Text(
+                                c['msg'],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: unread > 0 ? KormiColors.navy : KormiColors.textGrey,
+                                  fontWeight: unread > 0 ? FontWeight.bold : FontWeight.normal,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        if (isMe) _tickIcon(m['tick']),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(c['time'], style: const TextStyle(color: KormiColors.textGrey, fontSize: 11)),
+                            if (unread > 0) ...[
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: const BoxDecoration(color: KormiColors.navy, shape: BoxShape.circle),
+                                child: Text('$unread', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                              ),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -164,43 +247,122 @@ class _MessagesScreenState extends State<MessagesScreen> {
               },
             ),
           ),
-          if (_isTyping)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('লিখতেছে...', style: TextStyle(color: Colors.white70)),
-              ),
+        ],
+      ),
+    );
+  }
+}
+
+// Chat Page
+class _ChatPage extends StatefulWidget {
+  final String name;
+  final String role;
+  const _ChatPage({required this.name, required this.role});
+
+  @override
+  State<_ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<_ChatPage> {
+  final _msgController = TextEditingController();
+  final List<Map<String, dynamic>> _messages = [
+    {'text': 'আসসালামু আলাইকুম স্যার', 'me': false, 'time': '09:10 AM'},
+    {'text': 'ওয়ালাইকুম আসসালাম, Production summary পাঠিয়ে দিয়েছি', 'me': true, 'time': '09:12 AM'},
+    {'text': 'দেখেছি স্যার, Unit 1 Total 39,353 kg হয়েছে', 'me': false, 'time': '09:15 AM'},
+    {'text': 'RF-14 breakdown টা দেখো, 45 min down ছিল', 'me': true, 'time': '09:16 AM'},
+  ];
+
+  @override
+  void dispose() {
+    _msgController.dispose();
+    super.dispose();
+  }
+
+  void _send() {
+    final text = _msgController.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _messages.add({'text': text, 'me': true, 'time': 'Now'});
+      _msgController.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: KormiColors.bg,
+      appBar: AppBar(
+        backgroundColor: KormiColors.navy,
+        foregroundColor: KormiColors.goldLight,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(widget.role, style: const TextStyle(fontSize: 11, color: KormiColors.goldLight)),
+          ],
+        ),
+        actions: [
+          IconButton(icon: const Icon(Icons.call_outlined), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(14),
+              itemCount: _messages.length,
+              itemBuilder: (context, i) {
+                final m = _messages[i];
+                final me = m['me'] as bool;
+                return Align(
+                  alignment: me ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                    decoration: BoxDecoration(
+                      color: me ? KormiColors.navy : Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: KormiColors.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(m['text'], style: TextStyle(color: me ? Colors.white : KormiColors.navy, fontSize: 14)),
+                        const SizedBox(height: 4),
+                        Text(m['time'], style: TextStyle(color: me ? KormiColors.goldLight : KormiColors.textGrey, fontSize: 10)),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(10),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            color: Colors.white,
+            child: SafeArea(
               child: Row(
                 children: [
+                  IconButton(icon: const Icon(Icons.attach_file_outlined, color: KormiColors.navy), onPressed: () {}),
                   Expanded(
                     child: TextField(
-                      controller: _controller,
-                      decoration: const InputDecoration(
-                        hintText: 'মেসেজ লিখুন...',
-                        border: OutlineInputBorder(),
+                      controller: _msgController,
+                      decoration: InputDecoration(
+                        hintText: 'Type message...',
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: KormiColors.bg,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
                       ),
-                      onChanged: (v) => setState(() => _isTyping = v.isNotEmpty),
+                      onSubmitted: (_) => _send(),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.attach_file, color: Colors.white),
-                    onPressed: () {},
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.mic, color: Color(0xFFD4AF37), size: 30),
-                    onPressed: () {},
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.send, color: Color(0xFFD4AF37), size: 30),
-                    onPressed: _sendMessage,
+                  CircleAvatar(
+                    backgroundColor: KormiColors.navy,
+                    child: IconButton(icon: const Icon(Icons.send_outlined, color: KormiColors.goldLight, size: 20), onPressed: _send),
                   ),
                 ],
               ),
