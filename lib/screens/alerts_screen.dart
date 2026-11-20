@@ -1,5 +1,5 @@
-// KORMI - Alerts Screen
-// Breakdown / Manpower / Approval / Production Alerts
+// KORMI - Alerts Screen - REAL ACTION
+// Alert Read / Delete / Filter - সব Real
 
 import 'package:flutter/material.dart';
 import '../theme/kormi_theme.dart';
@@ -15,63 +15,73 @@ class _AlertsScreenState extends State<AlertsScreen> {
   String _filter = 'All';
 
   final List<Map<String, dynamic>> _alerts = [
-    {
-      'title': 'Breakdown - RF-14',
-      'desc': 'Ring Frame RF-14 - 45 min down, Main drive belt slip',
-      'time': '10:42 AM • Today',
-      'type': 'Breakdown',
-      'icon': Icons.warning_amber_rounded,
-      'color': KormiColors.red,
-      'unread': true,
-    },
-    {
-      'title': 'Pending Approval - 2 Workers',
-      'desc': 'Karim Sheikh (K-1042) ar Nasir Ahmed (K-1043) approval er jonno wait kortese',
-      'time': '09:15 AM • Today',
-      'type': 'Approval',
-      'icon': Icons.person_add_outlined,
-      'color': KormiColors.gold,
-      'unread': true,
-    },
-    {
-      'title': 'Manpower Short - RING Section',
-      'desc': 'RING - Required 48, Present 46, Absent 2 (P/B Shift)',
-      'time': '08:30 AM • Today',
-      'type': 'Manpower',
-      'icon': Icons.groups_outlined,
-      'color': KormiColors.navy,
-      'unread': true,
-    },
-    {
-      'title': 'Production Saved - Unit 1',
-      'desc': 'Unit 1 Total 39,353 kg saved, Share Format ready',
-      'time': 'Yesterday • 06:20 PM',
-      'type': 'Production',
-      'icon': Icons.factory_outlined,
-      'color': KormiColors.green,
-      'unread': false,
-    },
-    {
-      'title': 'Breakdown Resolved - CD-04',
-      'desc': 'Carding CD-04 resolved, 25 min down chilo',
-      'time': 'Yesterday • 04:10 PM',
-      'type': 'Breakdown',
-      'icon': Icons.check_circle_outlined,
-      'color': KormiColors.green,
-      'unread': false,
-    },
+    {'title': 'Breakdown Reported - R/F', 'desc': 'Ring Frame 12 - Belt slip, Production কমে গেছে', 'time': '08:15 AM', 'type': 'Breakdown', 'isRead': false, 'priority': 'High'},
+    {'title': 'Manpower Shortage - PACKING', 'desc': 'PACKING এ 2 জন Short - Required 24, Present 22', 'time': '08:00 AM', 'type': 'Manpower', 'isRead': false, 'priority': 'Medium'},
+    {'title': 'New Registration Pending', 'desc': 'Mizanur Rahman (K-1046) Approval এর জন্য অপেক্ষা করছে', 'time': '07:45 AM', 'type': 'Approval', 'isRead': false, 'priority': 'High'},
+    {'title': 'OT Request Pending', 'desc': 'Karim Sheikh - 2h OT Approval বাকি', 'time': 'Yesterday', 'type': 'OT', 'isRead': true, 'priority': 'Medium'},
+    {'title': 'Production Target Achieved', 'desc': 'Unit 1 - আজকের Target 95% Complete', 'time': 'Yesterday', 'type': 'Production', 'isRead': true, 'priority': 'Low'},
+    {'title': 'Worker Outside Mill', 'desc': 'Karim Sheikh Mill এর বাইরে আছে', 'time': 'Yesterday', 'type': 'Location', 'isRead': true, 'priority': 'Medium'},
   ];
 
   List<Map<String, dynamic>> get _filtered {
-    if (_filter == 'All') return _alerts;
-    if (_filter == 'Unread') return _alerts.where((e) => e['unread'] == true).toList();
-    return _alerts.where((e) => e['type'] == _filter).toList();
+    var list = _alerts;
+    if (_filter == 'Unread') list = list.where((e) => e['isRead'] == false).toList();
+    if (_filter == 'Read') list = list.where((e) => e['isRead'] == true).toList();
+    if (_filter == 'High') list = list.where((e) => e['priority'] == 'High').toList();
+    return list;
+  }
+
+  int get _unreadCount => _alerts.where((e) => e['isRead'] == false).length;
+
+  void _markRead(int idx) {
+    setState(() => _alerts[idx]['isRead'] = true);
+  }
+
+  void _markAllRead() {
+    setState(() {
+      for (final a in _alerts) a['isRead'] = true;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('সব Alert Read করা হয়েছে')));
+  }
+
+  void _deleteAlert(int idx) {
+    final item = _alerts[idx];
+    setState(() => _alerts.removeAt(idx));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${item['title']} Deleted'), action: SnackBarAction(label: 'Undo', onPressed: () => setState(() => _alerts.insert(idx, item)))));
+  }
+
+  void _clearAll() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Clear All Alerts?'),
+        content: const Text('সব Alert মুছে যাবে।'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () { setState(() => _alerts.clear()); Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('সব Alert Clear করা হয়েছে'))); }, child: const Text('Clear', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+  }
+
+  IconData _iconFor(String type) {
+    if (type == 'Breakdown') return Icons.build_outlined;
+    if (type == 'Manpower') return Icons.groups_outlined;
+    if (type == 'Approval') return Icons.person_add_outlined;
+    if (type == 'OT') return Icons.schedule_outlined;
+    if (type == 'Production') return Icons.factory_outlined;
+    if (type == 'Location') return Icons.location_on_outlined;
+    return Icons.notifications_outlined;
+  }
+
+  Color _colorFor(String priority) {
+    if (priority == 'High') return KormiColors.red;
+    if (priority == 'Medium') return KormiColors.gold;
+    return KormiColors.green;
   }
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = _alerts.where((e) => e['unread'] == true).length;
-
     return Scaffold(
       backgroundColor: KormiColors.bg,
       appBar: AppBar(
@@ -79,141 +89,105 @@ class _AlertsScreenState extends State<AlertsScreen> {
         foregroundColor: KormiColors.goldLight,
         title: const Text('Alerts'),
         actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                for (final a in _alerts) {
-                  a['unread'] = false;
-                }
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('All Alerts Mark as Read')),
-              );
-            },
-            child: const Text('Mark All Read', style: TextStyle(color: KormiColors.goldLight, fontWeight: FontWeight.bold, fontSize: 12)),
-          ),
+          TextButton(onPressed: _markAllRead, child: const Text('Mark All Read', style: TextStyle(color: KormiColors.goldLight, fontWeight: FontWeight.bold, fontSize: 12))),
+          IconButton(icon: const Icon(Icons.delete_sweep_outlined), onPressed: _clearAll),
         ],
       ),
       body: Column(
         children: [
-          // Summary
           Padding(
-            padding: const EdgeInsets.all(14),
-            child: KormiCard(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(color: KormiColors.navy, borderRadius: BorderRadius.circular(16), border: Border.all(color: KormiColors.gold.withOpacity(0.3))),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _summaryItem('Total', '${_alerts.length}', KormiColors.navy),
-                  _summaryItem('Unread', '$unreadCount', KormiColors.red),
-                  _summaryItem('Today', '3', KormiColors.green),
+                  Text('$_unreadCount Unread Alerts', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text('Total: ${_alerts.length}', style: const TextStyle(color: KormiColors.goldLight, fontSize: 13)),
                 ],
               ),
             ),
           ),
-          // Filter chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(
-              children: ['All', 'Unread', 'Breakdown', 'Manpower', 'Approval', 'Production'].map((f) {
+              children: ['All', 'Unread', 'Read', 'High'].map((f) {
                 final active = _filter == f;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: GestureDetector(
                     onTap: () => setState(() => _filter = f),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: active ? KormiColors.navy : Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: KormiColors.border),
-                      ),
-                      child: Text(f,
-                          style: TextStyle(
-                              color: active ? KormiColors.goldLight : KormiColors.navy,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13)),
-                    ),
+                    child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: active ? KormiColors.navy : Colors.white, borderRadius: BorderRadius.circular(30), border: Border.all(color: KormiColors.border)), child: Text(f, style: TextStyle(color: active ? KormiColors.goldLight : KormiColors.navy, fontWeight: FontWeight.bold, fontSize: 12))),
                   ),
                 );
               }).toList(),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Expanded(
             child: _filtered.isEmpty
-                ? const Center(child: Text('Kono Alert nai', style: TextStyle(color: KormiColors.textGrey)))
+                ? const Center(child: Text('কোনো Alert নাই', style: TextStyle(color: KormiColors.textGrey)))
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                     itemCount: _filtered.length,
-                    itemBuilder: (context, index) {
-                      final a = _filtered[index];
-                      final unread = a['unread'] as bool;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: KormiCard(
-                          onTap: () {
-                            setState(() => a['unread'] = false);
-                          },
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(11),
-                                decoration: BoxDecoration(
-                                  color: (a['color'] as Color).withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(12),
+                    itemBuilder: (context, i) {
+                      final a = _filtered[i];
+                      final idx = _alerts.indexOf(a);
+                      final isRead = a['isRead'] as bool;
+                      return Dismissible(
+                        key: ValueKey(a['title'] + a['time']),
+                        direction: DismissDirection.endToStart,
+                        background: Container(alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 20), decoration: BoxDecoration(color: KormiColors.red, borderRadius: BorderRadius.circular(16)), child: const Icon(Icons.delete_outline, color: Colors.white)),
+                        onDismissed: (_) => _deleteAlert(idx),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: KormiCard(
+                            onTap: () => _markRead(idx),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(backgroundColor: _colorFor(a['priority']).withOpacity(0.12), child: Icon(_iconFor(a['type']), color: _colorFor(a['priority']), size: 20)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(child: Text(a['title'], style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 14, decoration: isRead ? null : TextDecoration.none))),
+                                          if (!isRead) Container(width: 8, height: 8, decoration: const BoxDecoration(color: KormiColors.red, shape: BoxShape.circle)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(a['desc'], style: TextStyle(color: isRead ? KormiColors.textGrey : KormiColors.navy, fontSize: 12)),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Text('${a['type']} • ${a['time']}', style: const TextStyle(color: KormiColors.textGrey, fontSize: 11)),
+                                          const SizedBox(width: 8),
+                                          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: _colorFor(a['priority']).withOpacity(0.12), borderRadius: BorderRadius.circular(20)), child: Text(a['priority'], style: TextStyle(color: _colorFor(a['priority']), fontWeight: FontWeight.bold, fontSize: 10))),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: Icon(a['icon'] as IconData, color: a['color'] as Color, size: 22),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(a['title'],
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: KormiColors.navy,
-                                                  fontSize: 14,
-                                                  decoration: TextDecoration.none)),
-                                        ),
-                                        if (unread)
-                                          Container(
-                                            width: 9,
-                                            height: 9,
-                                            decoration: const BoxDecoration(color: KormiColors.red, shape: BoxShape.circle),
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(a['desc'], style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
-                                    const SizedBox(height: 4),
-                                    Text(a['time'], style: const TextStyle(color: KormiColors.textGrey, fontSize: 11)),
-                                  ],
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       );
                     },
                   ),
           ),
+          const Padding(
+            padding: EdgeInsets.all(14),
+            child: Text('Alert ডানে Swipe করলে Delete হবে। Alert এ চাপ দিলে Read হবে।', textAlign: TextAlign.center, style: TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _summaryItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 22)),
-        Text(label, style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
-      ],
     );
   }
 }
