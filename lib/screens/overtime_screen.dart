@@ -1,5 +1,5 @@
-// KORMI - Overtime (OT) Screen
-// OT Entry + OT List + Share Format
+// KORMI - Overtime Screen - REAL ACTION
+// OT Hours থেকে OT Amount Real Calculation + Approve / Reject
 
 import 'package:flutter/material.dart';
 import '../theme/kormi_theme.dart';
@@ -12,277 +12,284 @@ class OvertimeScreen extends StatefulWidget {
 }
 
 class _OvertimeScreenState extends State<OvertimeScreen> {
-  String _worker = 'Karim Sheikh (K-1042)';
-  String _shift = 'P/B';
-  DateTime _date = DateTime.now();
-  final _hoursController = TextEditingController(text: '2.5');
-  final _rateController = TextEditingController(text: '85');
+  String _filter = 'All';
+  String _shift = 'P/B-R/C';
 
-  final List<Map<String, dynamic>> _otList = [
-    {'name': 'Karim Sheikh', 'card': 'K-1042', 'date': '18.11.26', 'shift': 'P/B', 'hours': 2.5, 'rate': 85, 'total': 212.5},
-    {'name': 'Jashim Uddin', 'card': 'K-1045', 'date': '18.11.26', 'shift': 'P/B', 'hours': 3.0, 'rate': 85, 'total': 255.0},
-    {'name': 'Rahim Uddin', 'card': 'K-1041', 'date': '17.11.26', 'shift': 'P/A', 'hours': 2.0, 'rate': 90, 'total': 180.0},
+  // OT Calculator Inputs
+  final _salaryController = TextEditingController(text: '14500');
+  final _otHoursController = TextEditingController(text: '2');
+  final _nightHoursController = TextEditingController(text: '0');
+
+  final List<Map<String, dynamic>> _requests = [
+    {'card': 'K-1042', 'name': 'Karim Sheikh', 'section': 'RING', 'date': '18.11.26', 'otHours': 2.0, 'nightHours': 0.0, 'salary': 14500.0, 'status': 'Pending', 'reason': 'Ring Frame Extra Production'},
+    {'card': 'K-1045', 'name': 'Jashim Uddin', 'section': 'PACKING', 'date': '18.11.26', 'otHours': 3.0, 'nightHours': 1.0, 'salary': 13800.0, 'status': 'Approved', 'reason': 'Packing Backlog Clear'},
+    {'card': 'K-1047', 'name': 'Abdul Kader', 'section': 'RING', 'date': '17.11.26', 'otHours': 1.5, 'nightHours': 0.0, 'salary': 15200.0, 'status': 'Pending', 'reason': 'Machine Breakdown Cover'},
+    {'card': 'K-1046', 'name': 'Mizanur Rahman', 'section': 'AUTOCONE', 'date': '17.11.26', 'otHours': 2.0, 'nightHours': 2.0, 'salary': 11200.0, 'status': 'Rejected', 'reason': 'Autocone Night Shift'},
   ];
 
-  double get _totalHours => _otList.fold(0.0, (s, e) => s + (e['hours'] as double));
-  double get _totalAmount => _otList.fold(0.0, (s, e) => s + (e['total'] as double));
-
-  double get _currentTotal {
-    final h = double.tryParse(_hoursController.text) ?? 0;
-    final r = double.tryParse(_rateController.text) ?? 0;
-    return h * r;
+  @override
+  void dispose() {
+    _salaryController.dispose();
+    _otHoursController.dispose();
+    _nightHoursController.dispose();
+    super.dispose();
   }
 
-  void _saveOt() {
-    final h = double.tryParse(_hoursController.text) ?? 0;
-    final r = double.tryParse(_rateController.text) ?? 0;
-    if (h <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('OT Hours দিন')),
-      );
-      return;
+  // Formula: Hourly = Salary / 208 (26 days x 8 hrs)
+  // OT Amount = Hourly x OT Hours x 1.5
+  // Night Bill = Night Hours x 50 (Fixed Demo Rate)
+  double _hourly(double salary) => salary / 208;
+  double _otAmount(double salary, double otHours) => _hourly(salary) * otHours * 1.5;
+  double _nightAmount(double nightHours) => nightHours * 50;
+  double _totalAmount(double salary, double otHours, double nightHours) => _otAmount(salary, otHours) + _nightAmount(nightHours);
+
+  double get _calcOt {
+    final s = double.tryParse(_salaryController.text) ?? 0;
+    final h = double.tryParse(_otHoursController.text) ?? 0;
+    return _otAmount(s, h);
+  }
+
+  double get _calcNight {
+    final n = double.tryParse(_nightHoursController.text) ?? 0;
+    return _nightAmount(n);
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    var list = _requests;
+    if (_filter == 'Pending') list = list.where((e) => e['status'] == 'Pending').toList();
+    if (_filter == 'Approved') list = list.where((e) => e['status'] == 'Approved').toList();
+    if (_filter == 'Rejected') list = list.where((e) => e['status'] == 'Rejected').toList();
+    return list;
+  }
+
+  double get _totalPendingAmount {
+    double total = 0;
+    for (final r in _requests.where((e) => e['status'] == 'Pending')) {
+      total += _totalAmount(r['salary'], r['otHours'], r['nightHours']);
     }
-    setState(() {
-      _otList.insert(0, {
-        'name': _worker.split(' (').first,
-        'card': 'K-1042',
-        'date': '${_date.day}.${_date.month}.${_date.year}',
-        'shift': _shift,
-        'hours': h,
-        'rate': r,
-        'total': h * r,
-      });
-      _hoursController.clear();
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('OT Saved - ${h} hrs, ৳ ${h * r}')),
+    return total;
+  }
+
+  double get _totalApprovedAmount {
+    double total = 0;
+    for (final r in _requests.where((e) => e['status'] == 'Approved')) {
+      total += _totalAmount(r['salary'], r['otHours'], r['nightHours']);
+    }
+    return total;
+  }
+
+  void _changeStatus(int idx, String newStatus) {
+    setState(() => _requests[idx]['status'] = newStatus);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_requests[idx]['name']} - $newStatus')));
+  }
+
+  void _showAddRequest() {
+    final cardC = TextEditingController();
+    final nameC = TextEditingController();
+    final otC = TextEditingController(text: '2');
+    final nightC = TextEditingController(text: '0');
+    final salaryC = TextEditingController(text: '14500');
+    String section = 'RING';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 16, left: 16, right: 16, top: 16),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('New OT Request', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: KormiColors.navy)),
+                const SizedBox(height: 12),
+                TextField(controller: cardC, decoration: _input('Card Number')),
+                const SizedBox(height: 10),
+                TextField(controller: nameC, decoration: _input('Worker Name')),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(child: _dropdown('Section', section, ['BACKSIDE', 'RING', 'AUTOCONE', 'PACKING'], (v) => setSheet(() => section = v!))),
+                    const SizedBox(width: 10),
+                    Expanded(child: TextField(controller: salaryC, keyboardType: TextInputType.number, decoration: _input('Salary'))),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(child: TextField(controller: otC, keyboardType: TextInputType.number, decoration: _input('OT Hours'))),
+                    const SizedBox(width: 10),
+                    Expanded(child: TextField(controller: nightC, keyboardType: TextInputType.number, decoration: _input('Night Hours'))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: KormiColors.navy, borderRadius: BorderRadius.circular(12)),
+                  child: Text('OT Amount: ${_otAmount(double.tryParse(salaryC.text) ?? 0, double.tryParse(otC.text) ?? 0).toStringAsFixed(0)} ৳ + Night: ${_nightAmount(double.tryParse(nightC.text) ?? 0).toStringAsFixed(0)} ৳ = Total: ${_totalAmount(double.tryParse(salaryC.text) ?? 0, double.tryParse(otC.text) ?? 0, double.tryParse(nightC.text) ?? 0).toStringAsFixed(0)} ৳', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+                const SizedBox(height: 14),
+                KormiPrimaryButton(
+                  label: 'Submit OT Request',
+                  onPressed: () {
+                    if (cardC.text.trim().isEmpty || nameC.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Card + Name লিখুন')));
+                      return;
+                    }
+                    setState(() {
+                      _requests.insert(0, {'card': cardC.text.trim(), 'name': nameC.text.trim(), 'section': section, 'date': '18.11.26', 'otHours': double.tryParse(otC.text) ?? 0, 'nightHours': double.tryParse(nightC.text) ?? 0, 'salary': double.tryParse(salaryC.text) ?? 0, 'status': 'Pending', 'reason': 'OT Request'});
+                    });
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('OT Request Submitted - Pending Approval')));
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   @override
-  void dispose() {
-    _hoursController.dispose();
-    _rateController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final calcSalary = double.tryParse(_salaryController.text) ?? 0;
+    final calcOtH = double.tryParse(_otHoursController.text) ?? 0;
+    final calcNightH = double.tryParse(_nightHoursController.text) ?? 0;
+
     return Scaffold(
       backgroundColor: KormiColors.bg,
       appBar: AppBar(
         backgroundColor: KormiColors.navy,
         foregroundColor: KormiColors.goldLight,
-        title: const Text('Overtime (OT)'),
+        title: const Text('Overtime'),
+        actions: [IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: _showAddRequest)],
       ),
+      floatingActionButton: FloatingActionButton(backgroundColor: KormiColors.navy, foregroundColor: KormiColors.goldLight, onPressed: _showAddRequest, child: const Icon(Icons.add)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
-            // Summary
-            KormiCard(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _summaryItem('Total Hours', '${_totalHours.toStringAsFixed(1)} hrs', KormiColors.navy),
-                  _summaryItem('Total Amount', '৳ ${_totalAmount.toStringAsFixed(0)}', KormiColors.green),
-                  _summaryItem('Entries', '${_otList.length}', KormiColors.gold),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // OT Entry Form
+            // OT Calculator - Real
             KormiCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('OT Entry', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
-                  const SizedBox(height: 14),
-                  _dropdownBox(
-                    _worker,
-                    ['Karim Sheikh (K-1042)', 'Jashim Uddin (K-1045)', 'Rahim Uddin (K-1041)', 'Nasir Ahmed (K-1043)'],
-                    (v) => setState(() => _worker = v!),
-                  ),
+                  const Text('OT Calculator - Real Formula', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 16)),
+                  const SizedBox(height: 4),
+                  const Text('Hourly = Salary / 208 • OT = Hourly x Hours x 1.5 • Night = Hours x 50৳', style: TextStyle(color: KormiColors.textGrey, fontSize: 11)),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
-                        child: _dropdownBox(_shift, ['P/A', 'P/B', 'P/C', 'P/B-R/C'], (v) => setState(() => _shift = v!)),
-                      ),
+                      Expanded(child: _calcField('Salary', _salaryController)),
                       const SizedBox(width: 10),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: _date,
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime.now().add(const Duration(days: 30)),
-                            );
-                            if (picked != null) setState(() => _date = picked);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: KormiColors.border),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.calendar_today_outlined, size: 18, color: KormiColors.navy),
-                                const SizedBox(width: 8),
-                                Text('${_date.day}/${_date.month}/${_date.year}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _hoursController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          onChanged: (_) => setState(() {}),
-                          decoration: _input('OT Hours (2.5)'),
-                        ),
-                      ),
+                      Expanded(child: _calcField('OT Hours', _otHoursController)),
                       const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: _rateController,
-                          keyboardType: TextInputType.number,
-                          onChanged: (_) => setState(() {}),
-                          decoration: _input('Rate / Hour (85)'),
-                        ),
-                      ),
+                      Expanded(child: _calcField('Night Hours', _nightHoursController)),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: KormiColors.navy,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(color: KormiColors.navy, borderRadius: BorderRadius.circular(12)),
+                    child: Column(
                       children: [
-                        const Text('Total OT Amount', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        Text('৳ ${_currentTotal.toStringAsFixed(0)}',
-                            style: const TextStyle(color: KormiColors.goldLight, fontWeight: FontWeight.bold, fontSize: 18)),
+                        Text('Hourly Rate: ${_hourly(calcSalary).toStringAsFixed(2)} ৳', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                        const SizedBox(height: 4),
+                        Text('OT: ${_calcOt.toStringAsFixed(0)} ৳  +  Night: ${_calcNight.toStringAsFixed(0)} ৳', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text('Total: ${(_calcOt + _calcNight).toStringAsFixed(0)} ৳', style: const TextStyle(color: KormiColors.goldLight, fontWeight: FontWeight.bold, fontSize: 18)),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  KormiPrimaryButton(label: 'Save OT & Share Format', onPressed: _saveOt),
                 ],
               ),
             ),
             const SizedBox(height: 14),
-
-            // OT List
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('OT List (${_otList.length})',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
-                TextButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('OT Share Format কপি হয়েছে')),
-                    );
-                  },
-                  child: const Text('Share All', style: TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold)),
-                ),
+                Expanded(child: _summaryBox('Pending OT', '${_totalPendingAmount.toStringAsFixed(0)} ৳', KormiColors.gold)),
+                const SizedBox(width: 8),
+                Expanded(child: _summaryBox('Approved OT', '${_totalApprovedAmount.toStringAsFixed(0)} ৳', KormiColors.green)),
               ],
             ),
-            const SizedBox(height: 6),
-            ..._otList.map((ot) {
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: ['All', 'Pending', 'Approved', 'Rejected'].map((f) {
+                  final active = _filter == f;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _filter = f),
+                      child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: active ? KormiColors.navy : Colors.white, borderRadius: BorderRadius.circular(30), border: Border.all(color: KormiColors.border)), child: Text(f, style: TextStyle(color: active ? KormiColors.goldLight : KormiColors.navy, fontWeight: FontWeight.bold, fontSize: 12))),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ..._filtered.map((r) {
+              final idx = _requests.indexOf(r);
+              final status = r['status'] as String;
+              final total = _totalAmount(r['salary'], r['otHours'], r['nightHours']);
               return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: KormiCard(
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        backgroundColor: KormiColors.navy.withOpacity(0.1),
-                        child: Text((ot['name'] as String)[0],
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy)),
+                      Row(
+                        children: [
+                          Expanded(child: Text('${r['name']} • ${r['card']}', style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 15))),
+                          Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: status == 'Approved' ? KormiColors.green.withOpacity(0.12) : status == 'Rejected' ? KormiColors.red.withOpacity(0.10) : KormiColors.gold.withOpacity(0.15), borderRadius: BorderRadius.circular(20)), child: Text(status, style: TextStyle(color: status == 'Approved' ? KormiColors.green : status == 'Rejected' ? KormiColors.red : KormiColors.navy, fontWeight: FontWeight.bold, fontSize: 11))),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 6),
+                      Text('${r['section']} • Date: ${r['date']} • Reason: ${r['reason']}', style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+                      const SizedBox(height: 6),
+                      Text('Salary: ${(r['salary'] as double).toStringAsFixed(0)} ৳ • OT: ${r['otHours']}h • Night: ${r['nightHours']}h', style: const TextStyle(color: KormiColors.navy, fontSize: 13)),
+                      Text('OT Amount: ${_otAmount(r['salary'], r['otHours']).toStringAsFixed(0)} ৳ + Night: ${_nightAmount(r['nightHours']).toStringAsFixed(0)} ৳ = Total: ${total.toStringAsFixed(0)} ৳', style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 13)),
+                      if (status == 'Pending') ...[
+                        const SizedBox(height: 10),
+                        Row(
                           children: [
-                            Text('${ot['name']} • ${ot['card']}',
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy)),
-                            Text('${ot['date']} • Shift ${ot['shift']} • ${ot['hours']} hrs @ ৳ ${ot['rate']}',
-                                style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+                            Expanded(child: ElevatedButton(onPressed: () => _changeStatus(idx, 'Approved'), style: ElevatedButton.styleFrom(backgroundColor: KormiColors.green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))), child: const Text('Approve', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)))),
+                            const SizedBox(width: 8),
+                            Expanded(child: OutlinedButton(onPressed: () => _changeStatus(idx, 'Rejected'), style: OutlinedButton.styleFrom(side: const BorderSide(color: KormiColors.red), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))), child: const Text('Reject', style: TextStyle(color: KormiColors.red, fontWeight: FontWeight.bold, fontSize: 13)))),
                           ],
                         ),
-                      ),
-                      Text('৳ ${(ot['total'] as double).toStringAsFixed(0)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 15)),
+                      ],
                     ],
                   ),
                 ),
               );
             }),
+            const SizedBox(height: 8),
+            const Text('OT Approve হলে Salary এর সাথে যোগ হবে।', textAlign: TextAlign.center, style: TextStyle(color: KormiColors.textGrey, fontSize: 12)),
           ],
         ),
       ),
     );
   }
 
-  Widget _summaryItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16)),
-        Text(label, style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
-      ],
-    );
+  Widget _summaryBox(String label, String value, Color color) {
+    return Container(padding: const EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: KormiColors.border)), child: Column(children: [Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16)), Text(label, style: const TextStyle(color: KormiColors.textGrey, fontSize: 11))]));
   }
 
-  Widget _dropdownBox(String value, List<String> items, ValueChanged<String?> onChanged) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: KormiColors.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
+  Widget _calcField(String label, TextEditingController controller) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 11)), const SizedBox(height: 6), TextField(controller: controller, keyboardType: TextInputType.number, onChanged: (_) => setState(() {}), decoration: _input(label))]);
   }
 
   InputDecoration _input(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 13, horizontal: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: KormiColors.border),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: KormiColors.border),
-      ),
-    );
+    return InputDecoration(hintText: hint, filled: true, fillColor: Colors.white, contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: KormiColors.border)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: KormiColors.border)));
+  }
+
+  Widget _dropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 12)), const SizedBox(height: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 12), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: KormiColors.border)), child: DropdownButtonHideUnderline(child: DropdownButton<String>(value: value, isExpanded: true, items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: onChanged)))]);
   }
 }
