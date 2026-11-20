@@ -1,7 +1,6 @@
 // KORMI - Login Screen - File 2
-// ছবির মতো: বড় K লোগো নাই, শুধু KORMI লেখা
-// Sign In / Register ট্যাব, Card ID, Password/PIN
-// লগইন সফল হলে ড্যাশবোর্ডে যাবে, আটকে থাকবে না
+// ইউজারনেম / পাসওয়ার্ড কোথাও লেখা থাকবে না, এটা সিক্রেট
+// Default Admin লেখা + Fill Admin বাটন তুলে দেওয়া হয়েছে
 
 import 'package:flutter/material.dart';
 import '../theme/kormi_theme.dart';
@@ -22,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passController = TextEditingController();
   final _nameController = TextEditingController();
 
-  // পাসওয়ার্ড দেখা / লুকানো
+  // পাসওয়ার্ড দেখা / লুকানো - ডিফল্ট লুকানো থাকবে
   bool _hidePass = true;
 
   // লোডিং দেখানোর জন্য
@@ -34,15 +33,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _passController.dispose();
     _nameController.dispose();
     super.dispose();
-  }
-
-  // ডিফল্ট অ্যাডমিন বাটন - ADMIN / ADMIN123 ভরে দিবে
-  void _fillAdmin() {
-    setState(() {
-      _isSignIn = true;
-      _idController.text = 'ADMIN';
-      _passController.text = 'ADMIN123';
-    });
   }
 
   // লগইন বাটন
@@ -198,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Password / PIN
+                    // Password / PIN - সবসময় লুকানো থাকবে
                     TextField(
                       controller: _passController,
                       obscureText: _hidePass,
@@ -221,35 +211,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             label: _isSignIn ? 'Sign In to Mill Workspace' : 'Register',
                             onPressed: _isSignIn ? _onLogin : _onRegister,
                           ),
-                    const SizedBox(height: 14),
-
-                    // ডিফল্ট অ্যাডমিন
-                    const Center(
-                      child: Text(
-                        'Default Admin: ADMIN / ADMIN123',
-                        style: TextStyle(color: KormiColors.textGrey, fontSize: 13),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Fill Admin বাটন
-                    OutlinedButton(
-                      onPressed: _fillAdmin,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: KormiColors.gold),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                      ),
-                      child: const Text(
-                        'Fill Admin',
-                        style: TextStyle(
-                          color: KormiColors.navy,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
