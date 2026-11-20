@@ -48,7 +48,7 @@ class _WorkersScreenState extends State<WorkersScreen> {
     String shift = 'General';
     await showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Add Worker'),
           content: SingleChildScrollView(
@@ -76,17 +76,21 @@ class _WorkersScreenState extends State<WorkersScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
                 if (cardC.text.trim().isEmpty || nameC.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Card Number ar Name lagbe')));
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('Card Number ar Name lagbe')));
                   return;
                 }
+                final messenger = ScaffoldMessenger.of(dialogContext);
+                final navigator = Navigator.of(dialogContext);
                 final w = WorkerModel(cardNumber: cardC.text.trim(), fullName: nameC.text.trim(), nid: nidC.text.trim(), phone: phoneC.text.trim(), dob: '', joiningDate: DateTime.now().toIso8601String().substring(0, 10), salary: salaryC.text.trim(), company: '', role: role, shift: shift);
                 await KormiDatabase.saveWorker(w.toMap());
-                if (mounted) Navigator.pop(context);
+                if (!mounted) return;
+                navigator.pop();
                 _load();
+                messenger.showSnackBar(const SnackBar(content: Text('Worker Save hoyeche')));
               },
               child: const Text('Save'),
             ),
@@ -127,6 +131,7 @@ class _WorkersScreenState extends State<WorkersScreen> {
                             icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () async {
                               await KormiDatabase.deleteWorker(w.cardNumber);
+                              if (!mounted) return;
                               _load();
                             },
                           ),
