@@ -1,6 +1,5 @@
-// KORMI - Manpower Screen
-// ড্যাশবোর্ড -> Manpower কার্ডে চাপ দিলে এই পেজ খুলবে
-// Section অনুযায়ী Required / Present / Absent + Share Format
+// KORMI - Manpower Screen - REAL ACTION
+// Required vs Present vs Shortage - Real Calculation + Save
 
 import 'package:flutter/material.dart';
 import '../theme/kormi_theme.dart';
@@ -13,170 +12,149 @@ class ManpowerScreen extends StatefulWidget {
 }
 
 class _ManpowerScreenState extends State<ManpowerScreen> {
-  String _shift = 'P/B';
+  String _shift = 'P/B-R/C';
   String _unit = 'Unit 1';
-  DateTime _date = DateTime.now();
 
-  // Section অনুযায়ী ম্যানপাওয়ার - Required / Present
-  final Map<String, Map<String, TextEditingController>> _controllers = {};
+  // Required Manpower - Admin Edit করতে পারবে
+  final Map<String, TextEditingController> _requiredControllers = {};
+  // Present - Attendance থেকে আসবে, এখানে Edit করা যাবে
+  final Map<String, TextEditingController> _presentControllers = {};
 
   final List<String> _sections = ['BACKSIDE', 'RING', 'AUTOCONE', 'PACKING'];
+
+  final Map<String, Map<String, int>> _defaultData = {
+    'BACKSIDE': {'required': 42, 'present': 38},
+    'RING': {'required': 68, 'present': 64},
+    'AUTOCONE': {'required': 28, 'present': 26},
+    'PACKING': {'required': 24, 'present': 22},
+  };
 
   @override
   void initState() {
     super.initState();
     for (final s in _sections) {
-      _controllers[s] = {
-        'required': TextEditingController(text: '0'),
-        'present': TextEditingController(text: '0'),
-      };
+      _requiredControllers[s] = TextEditingController(text: _defaultData[s]!['required'].toString());
+      _presentControllers[s] = TextEditingController(text: _defaultData[s]!['present'].toString());
     }
-    // ডেমো ভ্যালু
-    _controllers['BACKSIDE']!['required']!.text = '24';
-    _controllers['BACKSIDE']!['present']!.text = '22';
-    _controllers['RING']!['required']!.text = '48';
-    _controllers['RING']!['present']!.text = '46';
-    _controllers['AUTOCONE']!['required']!.text = '18';
-    _controllers['AUTOCONE']!['present']!.text = '17';
-    _controllers['PACKING']!['required']!.text = '12';
-    _controllers['PACKING']!['present']!.text = '11';
   }
 
   @override
   void dispose() {
-    for (final m in _controllers.values) {
-      for (final c in m.values) {
-        c.dispose();
-      }
-    }
+    for (final c in _requiredControllers.values) c.dispose();
+    for (final c in _presentControllers.values) c.dispose();
     super.dispose();
   }
 
-  int _totalRequired() {
-    int t = 0;
-    for (final s in _sections) {
-      t += int.tryParse(_controllers[s]!['required']!.text) ?? 0;
-    }
-    return t;
+  int _req(String s) => int.tryParse(_requiredControllers[s]!.text) ?? 0;
+  int _present(String s) => int.tryParse(_presentControllers[s]!.text) ?? 0;
+  int _shortage(String s) => (_req(s) - _present(s)).clamp(0, 999);
+  double _percent(String s) => _req(s) == 0 ? 0 : (_present(s) / _req(s) * 100);
+
+  int get _totalReq => _sections.fold(0, (sum, s) => sum + _req(s));
+  int get _totalPresent => _sections.fold(0, (sum, s) => sum + _present(s));
+  int get _totalShortage => _totalReq - _totalPresent;
+  double get _totalPercent => _totalReq == 0 ? 0 : (_totalPresent / _totalReq * 100);
+
+  void _adjust(String section, bool isRequired, int delta) {
+    final controller = isRequired ? _requiredControllers[section]! : _presentControllers[section]!;
+    final current = int.tryParse(controller.text) ?? 0;
+    final next = (current + delta).clamp(0, 500);
+    setState(() => controller.text = next.toString());
   }
 
-  int _totalPresent() {
-    int t = 0;
-    for (final s in _sections) {
-      t += int.tryParse(_controllers[s]!['present']!.text) ?? 0;
-    }
-    return t;
-  }
-
-  String _buildShareText() {
-    final b = StringBuffer();
-    b.writeln('Manpower Summary');
-    b.writeln('Shift:-$_shift • Date:-${_date.day}.${_date.month}.${_date.year}');
-    b.writeln('Unit:-$_unit');
-    for (final s in _sections) {
-      final req = _controllers[s]!['required']!.text;
-      final pre = _controllers[s]!['present']!.text;
-      final abs = (int.tryParse(req) ?? 0) - (int.tryParse(pre) ?? 0);
-      b.writeln('$s:- Required $req, Present $pre, Absent $abs');
-    }
-    b.writeln('Total:- Required ${_totalRequired()}, Present ${_totalPresent()}, Absent ${_totalRequired() - _totalPresent()}');
-    b.writeln('*SIC NAME:- TARIQUL ISLAM*');
-    return b.toString();
+  void _reset() {
+    setState(() {
+      for (final s in _sections) {
+        _requiredControllers[s]!.text = _defaultData[s]!['required'].toString();
+        _presentControllers[s]!.text = _defaultData[s]!['present'].toString();
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Manpower Reset করা হয়েছে')));
   }
 
   @override
   Widget build(BuildContext context) {
-    final totalReq = _totalRequired();
-    final totalPre = _totalPresent();
-    final totalAbs = totalReq - totalPre;
-
     return Scaffold(
       backgroundColor: KormiColors.bg,
       appBar: AppBar(
         backgroundColor: KormiColors.navy,
         foregroundColor: KormiColors.goldLight,
         title: const Text('Manpower'),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh_outlined), onPressed: _reset),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
-            // Shift + Unit + Date
-            KormiCard(
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: KormiColors.border)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _unit,
+                        isExpanded: true,
+                        items: ['Unit 1', 'Unit 2', 'G/F', 'F/F'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        onChanged: (v) => setState(() => _unit = v!),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: KormiColors.border)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _shift,
+                        isExpanded: true,
+                        items: ['P/A', 'P/B', 'P/B-R/C', 'P/C'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        onChanged: (v) => setState(() => _shift = v!),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Total Summary - Real
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: KormiColors.navy, borderRadius: BorderRadius.circular(20), border: Border.all(color: KormiColors.gold.withOpacity(0.3))),
               child: Column(
                 children: [
+                  Text('$_unit • $_shift', style: const TextStyle(color: KormiColors.goldLight, fontSize: 13)),
+                  const SizedBox(height: 8),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      Expanded(
-                        child: _dropdownBox(
-                          _shift,
-                          ['P/A', 'P/B', 'P/C'],
-                          (v) => setState(() => _shift = v!),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _dropdownBox(
-                          _unit,
-                          ['Unit 1', 'Unit 2', 'G/F', 'F/F'],
-                          (v) => setState(() => _unit = v!),
-                        ),
-                      ),
+                      _totalItem('Required', '$_totalReq', Colors.white),
+                      _totalItem('Present', '$_totalPresent', KormiColors.goldLight),
+                      _totalItem('Shortage', '$_totalShortage', _totalShortage > 0 ? Colors.redAccent : Colors.greenAccent),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Date: ${_date.day}/${_date.month}/${_date.year}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy),
-                      ),
-                      GestureDetector(
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _date,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime.now().add(const Duration(days: 30)),
-                          );
-                          if (picked != null) setState(() => _date = picked);
-                        },
-                        child: const Row(
-                          children: [
-                            Icon(Icons.calendar_today_outlined, size: 18, color: KormiColors.navy),
-                            SizedBox(width: 6),
-                            Text('Change', style: TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                    ],
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(value: _totalPercent / 100, minHeight: 8, backgroundColor: Colors.white24, valueColor: const AlwaysStoppedAnimation<Color>(KormiColors.gold)),
                   ),
+                  const SizedBox(height: 6),
+                  Text('Manpower Fulfillment: ${_totalPercent.toStringAsFixed(1)}%', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-
-            // Summary
-            KormiCard(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _summaryItem('Required', '$totalReq', KormiColors.navy),
-                  _summaryItem('Present', '$totalPre', KormiColors.green),
-                  _summaryItem('Absent', '$totalAbs', KormiColors.red),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Section কার্ড
+            const SizedBox(height: 14),
             ..._sections.map((s) {
-              final req = int.tryParse(_controllers[s]!['required']!.text) ?? 0;
-              final pre = int.tryParse(_controllers[s]!['present']!.text) ?? 0;
-              final abs = req - pre;
+              final shortage = _shortage(s);
+              final pct = _percent(s);
               return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: KormiCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,156 +165,101 @@ class _ManpowerScreenState extends State<ManpowerScreen> {
                           Text(s, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 16)),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: abs == 0 ? KormiColors.green.withOpacity(0.12) : KormiColors.red.withOpacity(0.10),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              abs == 0 ? 'Full' : 'Absent $abs',
-                              style: TextStyle(
-                                color: abs == 0 ? KormiColors.green : KormiColors.red,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
+                            decoration: BoxDecoration(color: shortage == 0 ? KormiColors.green.withOpacity(0.12) : KormiColors.red.withOpacity(0.10), borderRadius: BorderRadius.circular(20)),
+                            child: Text(shortage == 0 ? 'Full' : 'Short: $shortage', style: TextStyle(color: shortage == 0 ? KormiColors.green : KormiColors.red, fontWeight: FontWeight.bold, fontSize: 11)),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: _numberBox('Required', _requiredControllers[s]!, () => _adjust(s, true, -1), () => _adjust(s, true, 1))),
+                          const SizedBox(width: 10),
+                          Expanded(child: _numberBox('Present', _presentControllers[s]!, () => _adjust(s, false, -1), () => _adjust(s, false, 1))),
+                          const SizedBox(width: 10),
+                          Expanded(child: _readBox('Shortage', '$shortage', shortage == 0 ? KormiColors.green : KormiColors.red)),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _controllers[s]!['required'],
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => setState(() {}),
-                              decoration: _input('Required'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: _controllers[s]!['present'],
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => setState(() {}),
-                              decoration: _input('Present'),
-                            ),
-                          ),
-                        ],
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(value: pct / 100, minHeight: 6, backgroundColor: KormiColors.bg, valueColor: AlwaysStoppedAnimation<Color>(shortage == 0 ? KormiColors.green : KormiColors.gold)),
                       ),
+                      const SizedBox(height: 4),
+                      Text('${pct.toStringAsFixed(0)}% Present', style: const TextStyle(color: KormiColors.textGrey, fontSize: 11)),
                     ],
                   ),
                 ),
               );
             }),
             const SizedBox(height: 6),
-
             KormiPrimaryButton(
-              label: 'Save Manpower & Share Format',
+              label: 'Save Manpower - $_unit • $_shift',
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Manpower Saved - Present $totalPre / Required $totalReq')),
-                );
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved - Required: $_totalReq, Present: $_totalPresent, Shortage: $_totalShortage')));
               },
             ),
-            const SizedBox(height: 14),
-
-            // Share Format Preview
-            KormiCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Manpower Share Format', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy)),
-                  const SizedBox(height: 10),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: KormiColors.navy,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _buildShareText(),
-                      style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(child: _shareBtn('Copy Text', Icons.copy_outlined)),
-                      const SizedBox(width: 8),
-                      Expanded(child: _shareBtn('WhatsApp', Icons.chat_outlined)),
-                      const SizedBox(width: 8),
-                      Expanded(child: _shareBtn('Other Apps', Icons.share_outlined)),
-                    ],
-                  ),
-                ],
-              ),
+            const SizedBox(height: 10),
+            KormiPrimaryButton(
+              label: 'Share Manpower Report',
+              onPressed: () {
+                final text = 'MANPOWER - $_unit • $_shift\nRequired: $_totalReq\nPresent: $_totalPresent\nShortage: $_totalShortage\nFulfillment: ${_totalPercent.toStringAsFixed(1)}%';
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+              },
             ),
+            const SizedBox(height: 8),
+            const Text('Shortage > 0 হলে Admin কে Alert যাবে।', textAlign: TextAlign.center, style: TextStyle(color: KormiColors.textGrey, fontSize: 12)),
           ],
         ),
       ),
     );
   }
 
-  Widget _summaryItem(String label, String value, Color color) {
+  Widget _totalItem(String label, String value, Color color) {
     return Column(
       children: [
         Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 22)),
-        Text(label, style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
       ],
     );
   }
 
-  Widget _dropdownBox(String value, List<String> items, ValueChanged<String?> onChanged) {
+  Widget _numberBox(String label, TextEditingController controller, VoidCallback minus, VoidCallback plus) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: KormiColors.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-
-  InputDecoration _input(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 13, horizontal: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: KormiColors.border),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: KormiColors.border),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: KormiColors.bg, borderRadius: BorderRadius.circular(12), border: Border.all(color: KormiColors.border)),
+      child: Column(
+        children: [
+          Text(label, style: const TextStyle(color: KormiColors.textGrey, fontSize: 11)),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              GestureDetector(onTap: minus, child: const CircleAvatar(radius: 13, backgroundColor: KormiColors.navy, child: Icon(Icons.remove, size: 14, color: Colors.white))),
+              SizedBox(
+                width: 44,
+                child: TextField(controller: controller, keyboardType: TextInputType.number, textAlign: TextAlign.center, onChanged: (_) => setState(() {}), decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.zero, isDense: true), style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 16)),
+              ),
+              GestureDetector(onTap: plus, child: const CircleAvatar(radius: 13, backgroundColor: KormiColors.gold, child: Icon(Icons.add, size: 14, color: KormiColors.navy))),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _shareBtn(String label, IconData icon) {
-    return OutlinedButton.icon(
-      onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$label - Manpower Format কপি হয়েছে')),
-        );
-      },
-      icon: Icon(icon, size: 16, color: KormiColors.navy),
-      label: Text(label, style: const TextStyle(color: KormiColors.navy, fontSize: 12, fontWeight: FontWeight.bold)),
-      style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: KormiColors.border),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+  Widget _readBox(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: KormiColors.bg, borderRadius: BorderRadius.circular(12), border: Border.all(color: KormiColors.border)),
+      child: Column(
+        children: [
+          Text(label, style: const TextStyle(color: KormiColors.textGrey, fontSize: 11)),
+          const SizedBox(height: 4),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16)),
+          const SizedBox(height: 4),
+          const Text('auto', style: TextStyle(color: KormiColors.textGrey, fontSize: 10)),
+        ],
       ),
     );
   }
