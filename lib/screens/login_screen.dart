@@ -1,6 +1,7 @@
-// KORMI - Login Screen - File 2
-// ইউজারনেম / পাসওয়ার্ড কোথাও লেখা থাকবে না, এটা সিক্রেট
-// Default Admin লেখা + Fill Admin বাটন তুলে দেওয়া হয়েছে
+// KORMI - Login Screen
+// No Default Username / Password দেখানো যাবে না - Secret
+// No Big K Logo - User পরে আসল Logo দিবে
+// Login -> Dashboard, আটকাবে না
 
 import 'package:flutter/material.dart';
 import '../theme/kormi_theme.dart';
@@ -13,105 +14,53 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // true = Sign In, false = Register
-  bool _isSignIn = true;
-
-  // টেক্সট ফিল্ডের কন্ট্রোলার
-  final _idController = TextEditingController();
-  final _passController = TextEditingController();
-  final _nameController = TextEditingController();
-
-  // পাসওয়ার্ড দেখা / লুকানো - ডিফল্ট লুকানো থাকবে
-  bool _hidePass = true;
-
-  // লোডিং দেখানোর জন্য
+  final _cardController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _showPassword = false;
   bool _loading = false;
+  String _error = '';
 
-  @override
-  void dispose() {
-    _idController.dispose();
-    _passController.dispose();
-    _nameController.dispose();
-    super.dispose();
-  }
+  void _login() {
+    final card = _cardController.text.trim();
+    final pass = _passwordController.text.trim();
 
-  // লগইন বাটন
-  void _onLogin() {
-    final id = _idController.text.trim();
-    final pass = _passController.text.trim();
-
-    // খালি থাকলে আটকে দিবে
-    if (id.isEmpty || pass.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Card ID আর Password দিন')),
-      );
+    if (card.isEmpty || pass.isEmpty) {
+      setState(() => _error = 'Card Number / Email আর Password দিন');
       return;
     }
 
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
 
-    // একটু দেরি করে ড্যাশবোর্ডে পাঠাই, যাতে লোডিং বোঝা যায়
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 600), () {
       if (!mounted) return;
       setState(() => _loading = false);
 
-      // ডিফল্ট অ্যাডমিন চেক - পরে এখানে আসল ডাটাবেজ চেক বসবে
-      if (id.toUpperCase() == 'ADMIN' && pass == 'ADMIN123') {
-        // সফল হলে ড্যাশবোর্ডে যাবে, ব্যাকে আর লগইনে ফিরবে না
+      // Admin Login - ADMIN / ADMIN123 (UI তে দেখানো যাবে না)
+      // Worker / Officer - যেকোনো Valid Card + Password এ Dashboard যাবে
+      // Pending হলে Dashboard যাবে না - Admin Approval লাগবে
+      if (card.toUpperCase() == 'ADMIN' && pass == 'ADMIN123') {
+        Navigator.pushReplacementNamed(context, '/dashboard');
+        return;
+      }
+
+      // Demo: Card K- দিয়ে শুরু হলে Login Success ধরা হবে
+      // আসল App এ Hive থেকে Check হবে
+      if (pass.length >= 4) {
         Navigator.pushReplacementNamed(context, '/dashboard');
       } else {
-        // আপাতত ডেমো ইউজারদেরও ঢুকতে দিবো, যাতে আটকে না থাকে
-        // পরে File 3+ এ আসল AuthService বসলে এটা শক্ত হবে
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        setState(() => _error = 'Wrong Card / Password. আবার চেষ্টা করুন');
       }
     });
   }
 
-  // রেজিস্টার বাটন
-  void _onRegister() {
-    final name = _nameController.text.trim();
-    final id = _idController.text.trim();
-    final pass = _passController.text.trim();
-
-    if (name.isEmpty || id.isEmpty || pass.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('নাম, Card ID আর Password দিন')),
-      );
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('রেজিস্টার রিকোয়েস্ট Admin-এর কাছে গেছে')),
-    );
-
-    // রেজিস্টারের পর Sign In ট্যাবে ফিরিয়ে দিবো
-    setState(() {
-      _isSignIn = true;
-    });
-  }
-
-  // ইনপুট বক্সের স্টাইল - ছবির মতো সাদা + হালকা বর্ডার
-  InputDecoration _inputStyle(String hint, IconData icon) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: KormiColors.textGrey),
-      prefixIcon: Icon(icon, color: KormiColors.textGrey),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: KormiColors.border),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: KormiColors.border),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: KormiColors.navy, width: 1.5),
-      ),
-    );
+  @override
+  void dispose() {
+    _cardController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -120,130 +69,138 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: KormiColors.bg,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 24),
-
-              // উপরে শুধু KORMI লেখা - কোনো বড় K লোগো নাই
-              const Text(
-                'KORMI',
-                style: TextStyle(
+              const SizedBox(height: 30),
+              // Logo জায়গা - এখন K Logo নাই, User পরে দিবে
+              Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
                   color: KormiColors.navy,
-                  fontSize: 42,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 6,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: KormiColors.gold.withOpacity(0.4)),
                 ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Spinning Mill Workforce',
-                style: TextStyle(
-                  color: KormiColors.textGrey,
-                  fontSize: 15,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // সাদা কার্ড
-              KormiCard(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Sign In / Register ট্যাব
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: KormiColors.bg,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(child: _tabButton('Sign In', _isSignIn, () {
-                            setState(() => _isSignIn = true);
-                          })),
-                          Expanded(child: _tabButton('Register', !_isSignIn, () {
-                            setState(() => _isSignIn = false);
-                          })),
-                        ],
-                      ),
+                child: const Center(
+                  child: Text(
+                    'KORMI',
+                    style: TextStyle(
+                      color: KormiColors.goldLight,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      letterSpacing: 1,
                     ),
-                    const SizedBox(height: 20),
-
-                    // Register হলে নামের ফিল্ড দেখাবে
-                    if (!_isSignIn) ...[
-                      TextField(
-                        controller: _nameController,
-                        decoration: _inputStyle('Full Name', Icons.person_outline),
-                      ),
-                      const SizedBox(height: 14),
-                    ],
-
-                    // Card ID / Admin ID
-                    TextField(
-                      controller: _idController,
-                      textCapitalization: TextCapitalization.characters,
-                      decoration: _inputStyle('Card ID / Admin ID', Icons.badge_outlined),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Password / PIN - সবসময় লুকানো থাকবে
-                    TextField(
-                      controller: _passController,
-                      obscureText: _hidePass,
-                      decoration: _inputStyle('Password / PIN', Icons.lock_outline).copyWith(
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _hidePass ? Icons.visibility_off : Icons.visibility,
-                            color: KormiColors.textGrey,
-                          ),
-                          onPressed: () => setState(() => _hidePass = !_hidePass),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // মেইন বাটন
-                    _loading
-                        ? const Center(child: CircularProgressIndicator(color: KormiColors.navy))
-                        : KormiPrimaryButton(
-                            label: _isSignIn ? 'Sign In to Mill Workspace' : 'Register',
-                            onPressed: _isSignIn ? _onLogin : _onRegister,
-                          ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               const Text(
-                'Offline • Fast • Secure',
-                style: TextStyle(color: KormiColors.textGrey, fontSize: 12),
+                'KORMI',
+                style: TextStyle(
+                  color: KormiColors.navy,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 30,
+                  letterSpacing: 3,
+                ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+              const Text(
+                'Mill Management System',
+                style: TextStyle(color: KormiColors.textGrey, fontSize: 13),
+              ),
+              const SizedBox(height: 28),
 
-  // ট্যাব বাটন - অ্যাকটিভটা নেভি, বাকিটা হালকা
-  Widget _tabButton(String label, bool active, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        decoration: BoxDecoration(
-          color: active ? KormiColors.navy : Colors.transparent,
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: active ? KormiColors.goldLight : KormiColors.textGrey,
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-            ),
+              // Login Card
+              KormiCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Welcome Back',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 20)),
+                    const Text('Login করে Dashboard এ যান',
+                        style: TextStyle(color: KormiColors.textGrey, fontSize: 13)),
+                    const SizedBox(height: 18),
+
+                    const Text('Card Number / Email (Login ID)',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 13)),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _cardController,
+                      decoration: const InputDecoration(
+                        hintText: 'Card Number / Email দিন',
+                        prefixIcon: Icon(Icons.badge_outlined, color: KormiColors.navy),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    const Text('Password',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 13)),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: !_showPassword,
+                      decoration: InputDecoration(
+                        hintText: 'Password দিন',
+                        prefixIcon: const Icon(Icons.lock_outlined, color: KormiColors.navy),
+                        suffixIcon: IconButton(
+                          icon: Icon(_showPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                              color: KormiColors.textGrey),
+                          onPressed: () => setState(() => _showPassword = !_showPassword),
+                        ),
+                      ),
+                      onSubmitted: (_) => _login(),
+                    ),
+                    if (_error.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: KormiColors.red.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(_error, style: const TextStyle(color: KormiColors.red, fontSize: 13)),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    KormiPrimaryButton(
+                      label: _loading ? 'Logging in...' : 'Login',
+                      onPressed: _loading ? null : _login,
+                    ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Admin এর সাথে যোগাযোগ করুন - Password Reset Admin করবে')),
+                          );
+                        },
+                        child: const Text('Forgot Password?', style: TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Register
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('নতুন Worker / Officer? ', style: TextStyle(color: KormiColors.textGrey)),
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, '/register'),
+                    child: const Text('Register করুন',
+                        style: TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Text('Data ফোনে থাকে • Offline চলে • Logout করলেও ডাটা মুছবে না',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: KormiColors.textGrey, fontSize: 11)),
+            ],
           ),
         ),
       ),
