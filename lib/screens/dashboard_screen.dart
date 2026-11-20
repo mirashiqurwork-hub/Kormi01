@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
 import '../database/kormi_database.dart';
-import 'workers_screen.dart';
-import 'attendance_screen.dart';
-import 'production_screen.dart';
-import 'profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final void Function(int)? onNavigate;
@@ -54,11 +50,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  void _go(int index, Widget page) {
+  void _go(int index) {
     if (widget.onNavigate != null) {
       widget.onNavigate!(index);
-    } else {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => page));
     }
   }
 
@@ -210,12 +204,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             mainAxisSpacing: 12,
             childAspectRatio: 1.6,
             children: [
-              _actionCard('Add Worker', 'New worker add koro', Icons.person_add, () { _go(1, const WorkersScreen()); }),
-              _actionCard('Attendance', 'Present / Absent dao', Icons.check_circle, () { _go(2, const AttendanceScreen()); }),
-              _actionCard('Production', 'Production entry dao', Icons.factory, () { _go(3, const ProductionScreen()); }),
-              _actionCard('Calculator', 'Efficiency hisab koro', Icons.calculate, () { _go(3, const ProductionScreen()); }),
-              _actionCard('Workers List', 'Sob worker dekho', Icons.list, () { _go(1, const WorkersScreen()); }),
-              _actionCard('My Profile', 'Profile dekho', Icons.person, () { _go(4, const ProfileScreen()); }),
+              _actionCard('Add Worker', 'New worker add koro', Icons.person_add, () => _go(1)),
+              _actionCard('Attendance', 'Present / Absent dao', Icons.check_circle, () => _go(2)),
+              _actionCard('Production', 'Production entry dao', Icons.factory, () => _go(3)),
+              _actionCard('Calculator', 'Efficiency hisab koro', Icons.calculate, () => _go(3)),
+              _actionCard('Workers List', 'Sob worker dekho', Icons.list, () => _go(1)),
+              _actionCard('My Profile', 'Profile dekho', Icons.person, () => _go(4)),
             ],
           ),
         ],
