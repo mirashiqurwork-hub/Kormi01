@@ -27,6 +27,10 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Restore Android folder if missing
+        run: |
+          if [ ! -f android/app/src/main/AndroidManifest.xml ]; then echo "Android folder missing, recreating..."; flutter create --platforms=android .; else echo "Android folder found"; fi
+
       - name: Get Dependencies
         run: flutter pub get
 
@@ -35,7 +39,7 @@ jobs:
 
       - name: Generate App Icon From Logo
         run: |
-          if [ -f assets/images/logo.png ]; then dart run flutter_launcher_icons; else echo "No logo.png found, skip icon generation"; fi
+          if [ -f assets/images/logo.png ] && [ -f android/app/src/main/AndroidManifest.xml ]; then dart run flutter_launcher_icons || echo "Icon generation failed, continuing build"; else echo "Skip icon generation"; fi
 
       - name: Build APK Release
         run: flutter build apk --release
