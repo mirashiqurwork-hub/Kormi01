@@ -1,45 +1,29 @@
 # KORMI - Spinning Mill Workforce App
 
-Spinning Mill workforce management - Android, iOS, Computer - এক কোডে সব চলবে।
+Navy + Light Gold Glass Design - Kumira Spinning Mill
 
-## Design
-Navy Blue #0A1D3F + Champagne Gold #C9A961 / #D4AF37 + Glassmorphism
-Live Wallpaper Factory + Chimney Smoke - সব স্ক্রিনে একই ব্যাকগ্রাউন্ড।
+## Features - সব Module Real Action
 
-## Features
-- Workers - Card Number Unique, Company + Unit + Shift + Date
-- Attendance - Date / Unit / Permanent Shift P/A, P/B, P/C - Present / Absent / Off
-- Manpower - Back / Ring / A/Cone Fixed - শুধু Active + Present
-- Production - Carding, Drawing, Simplex, Ring, Winding, Packing + Calculator
-- Breakdown - Machine বন্ধ Entry + OCR
-- Messages - 【entity-WhatsApp¦canonical_name=WhatsApp】 এর মতো, 1-1 + Group, Text, Voice, Photo, Video, File, Live Location, Audio / Video Call
-- Location - Map + List, Unit / Section / Shift Filter
-- Admin - Pending Approve, Company, Shift Rotation, Night Bill, Bottom Bar Edit
-- ASK AI - Free Offline, No API Key, Bangla / English / Banglish
-- OCR - Camera Icon Everywhere - Gallery Photo + Take Photo
-- Overtime - Date / Unit / Shift + Night Bill Company অনুযায়ী
+- **Login / Register** - Card Number / Email দিয়ে Login, Photo Mandatory, Role অনুযায়ী Field, Worker / Officer = Pending, Admin Secret
+- **Dashboard** - Live Production, Attendance, Pending, Breakdown, Quick Actions
+- **Workers** - Search, Filter, Add, Edit, Delete, Call, Message, Activate / Deactivate
+- **Attendance** - Present / Absent / Late / Leave, Real Summary, Save
+- **Production** - Ring Calculator Real Formula, Sheet OCR Auto Fill, Entry + Share Format
+- **Manpower** - Required vs Present, Shortage Auto, Fulfillment %
+- **Breakdown** - Report, Open -> In Progress -> Fixed, Downtime
+- **Messages** - Real Chat, Unread, Quick Reply
+- **Alerts** - Read, Delete Swipe, Filter
+- **Overtime** - OT Calculator (Salary / 208 x Hours x 1.5) + Night Bill, Approve / Reject
+- **Location** - Inside / Outside Real Check, Distance
+- **Admin Panel** - Pending Approve / Reject, Users Active / Inactive, Audit Log
+- **Profile** - Edit, Change Password, Settings, Logout
 
-## Roles
-- Admin / Management - সব দেখতে পারবে
-- Officer - শুধু নিজের Unit + Permanent Shift
-- Worker - শুধু নিজে
+## 【entity-GitHub¦canonical_name=GitHub】 Mobile দিয়ে APK বানানো
 
-## Login
-- Admin: ADMIN / ADMIN123
-- Worker / Officer: নিজে Register - Pending - Admin Approve করলে ঢুকতে পারবে
-- Logout না করা পর্যন্ত Login থাকবে, ডাটা ডিলিট হবে না
+1. 【entity-GitHub¦canonical_name=GitHub】 App / Browser থেকে Repo `Kormi01` খুলুন
+2. এই সব File গুলো Upload করুন - Path ঠিক রাখবেন
+3. উপরে `Actions` Tab এ যান
+4. `Build KORMI APK` Workflow Run করুন
+5. Build শেষ হলে `Artifacts` থেকে `KORMI-APK` Download করুন
 
-## Shift Rotation
-শুক্রবার Rotation। Permanent Shift নাম একই থাকবে, শুধু Running Shift ঘুরবে।
-Night -> B, B -> সকাল, সকাল -> Night
-
-## Security
-Password Hash, 5 বার ভুল দিলে 15 মিনিট Lock, Encrypted DB / Settings / Backup, Audit Log, Screenshot Block Sensitive স্ক্রিনে, Root Warning, App Lock Optional Default Off।
-
-## No Keys In Public Repo
-Firebase / Maps / Call Key Public Repo তে নাই। Repo Private করার পর Key বসবে। এখন Placeholder।
-
-## Run
-```bash
-flutter pub get
-flutter run
+## File Structure
