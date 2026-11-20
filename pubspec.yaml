@@ -1,35 +1,57 @@
+# KORMI - Spinning Mill Workforce App
+# Flutter - Android, iOS, Computer - এক কোডে সব চলবে।
+
 name: kormi
-description: KORMI Spinning Mill Workforce App - Android, iOS, Computer
+description: KORMI - Spinning Mill Workforce Management - Navy + Gold
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.0
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
-  provider: ^6.1.2
+
+  # Local DB - Free, Offline, Superfast
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  intl: ^0.19.0
-  uuid: ^4.5.1
-  image_picker: ^1.1.2
-  file_picker: ^8.1.2
-  path_provider: ^2.1.5
-  share_plus: ^10.0.2
-  google_fonts: ^6.2.1
+  path_provider: ^2.1.1
+
+  # OCR - Camera / Gallery
+  image_picker: ^1.0.7
+
+  # Share - Manpower / Production Share
+  share_plus: ^7.2.1
+
+  # File / PDF / Excel খোলা
+  open_filex: ^4.3.2
+  file_picker: ^6.1.1
+
+  # Maps - Private করার পর আসল Key বসবে, এখন Placeholder
+  # google_maps_flutter: ^2.5.0
+
+  # Firebase / Call - Private করার পর Key বসবে, এখন বন্ধ
+  # firebase_core: ^2.24.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^3.0.0
   hive_generator: ^2.0.1
-  build_runner: ^2.4.13
+  build_runner: ^2.4.7
 
 flutter:
   uses-material-design: true
+
+  # Bangla Font - Hind Siliguri
+  # fonts:
+  #   - family: HindSiliguri
+  #     fonts:
+  #       - asset: assets/fonts/HindSiliguri-Regular.ttf
+  #       - asset: assets/fonts/HindSiliguri-Bold.ttf
+  #         weight: 700
+
   assets:
     - assets/images/
     - assets/icons/
