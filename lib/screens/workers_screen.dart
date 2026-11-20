@@ -1,10 +1,10 @@
-// Workers Screen - শ্রমিকের তালিকা
-// সুপারফাস্ট: প্রথমে অল্প ডাটা দেখাবে, নিচে টান দিলে আরও আসবে।
-// কার্ড নম্বর আগে, তারপর নাম।
+// KORMI - Workers Screen - File 6
+// ড্যাশবোর্ড -> Workers কার্ডে চাপ দিলে এই পেজ খুলবে
+// লিস্ট + সার্চ + Add Worker (Admin Add User)
 
 import 'package:flutter/material.dart';
-import '../database/kormi_database.dart';
-import '../widgets/ocr_camera_button.dart';
+import '../theme/kormi_theme.dart';
+import 'register_screen.dart';
 
 class WorkersScreen extends StatefulWidget {
   const WorkersScreen({super.key});
@@ -14,163 +14,174 @@ class WorkersScreen extends StatefulWidget {
 }
 
 class _WorkersScreenState extends State<WorkersScreen> {
-  // ডাটাবেজ থেকে শ্রমিক আনবো
-  final _db = KormiDatabase();
-  List<Map> _allWorkers = []; // সব শ্রমিক
-  List<Map> _showWorkers = []; // স্ক্রিনে যা দেখাবো
-  String _search = ''; // খোঁজার লেখা
+  String _search = '';
+  String _filter = 'All';
 
-  // পরে লগইন থেকে আসল তথ্য আসবে, এখন ডেমোর জন্য Admin
-  final String _myRole = 'Admin';
-  final String _myUnit = '1';
-  final String _myShift = 'A';
-  final String _myCompanyId = 'company_1';
+  // ডেমো ডাটা - পরে আসল ডাটাবেজ থেকে আসবে
+  final List<Map<String, String>> _allWorkers = [
+    {'name': 'Tariqul Islam', 'id': 'ADMIN', 'role': 'Admin', 'desg': 'Admin', 'shift': 'P/B-R/C', 'section': 'ALL SECTION', 'unit': 'UNIT-01', 'status': 'Active'},
+    {'name': 'Engr. Mahmudul Hasan', 'id': 'MGT-01', 'role': 'Management', 'desg': 'PM', 'shift': '-', 'section': '-', 'unit': 'ALL UNIT', 'status': 'Active'},
+    {'name': 'Sajjad Hossain', 'id': 'OFF-12', 'role': 'Officer', 'desg': 'PO', 'shift': 'P/B', 'section': 'RING', 'unit': 'UNIT-01', 'status': 'Active'},
+    {'name': 'Md. Rahim Mia', 'id': 'W-104', 'role': 'Worker', 'desg': 'OP', 'shift': 'P/A', 'section': 'RING', 'unit': 'UNIT-01', 'status': 'Active'},
+    {'name': 'Fatema Begum', 'id': 'W-105', 'role': 'Worker', 'desg': 'HELPER', 'shift': 'P/B', 'section': 'PACKING', 'unit': 'UNIT-01', 'status': 'Active'},
+    {'name': 'Rashedul Karim', 'id': 'W-106', 'role': 'Worker', 'desg': 'JR.A.OP', 'shift': 'P/C', 'section': 'BACKSIDE', 'unit': 'UNIT-02', 'status': 'Pending'},
+    {'name': 'Farhana Yasmin', 'id': 'OFF-19', 'role': 'Officer', 'desg': 'APO', 'shift': 'P/A', 'section': 'ALL SECTION', 'unit': 'UNIT-02', 'status': 'Pending'},
+    {'name': 'Kamrul Hasan', 'id': 'W-107', 'role': 'Worker', 'desg': 'SR.HELPER', 'shift': 'P/B', 'section': 'AUTOCONE', 'unit': 'G/F', 'status': 'Active'},
+    {'name': 'Nasrin Akter', 'id': 'W-108', 'role': 'Worker', 'desg': 'LINE-MAN', 'shift': 'P/A', 'section': 'RING', 'unit': 'F/F', 'status': 'Active'},
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadWorkers(); // স্ক্রিন খুললেই শ্রমিক লোড হবে
-  }
-
-  // শ্রমিক লোড করা, সুপারফাস্ট ভাবে
-  void _loadWorkers() {
-    final workers = _db.getWorkers(
-      myRole: _myRole,
-      myUnit: _myUnit,
-      myShift: _myShift,
-      myCompanyId: _myCompanyId,
-    );
-    setState(() {
-      _allWorkers = workers;
-      _filterWorkers(); // প্রথমে অল্প দেখাই
-    });
-  }
-
-  // খোঁজা + অল্প করে দেখানো
-  void _filterWorkers() {
-    var list = _allWorkers;
-
-    // নাম বা কার্ড নম্বর দিয়ে খুঁজলে
-    if (_search.isNotEmpty) {
-      list = list.where((w) {
-        final name = w['name'].toString().toLowerCase();
-        final card = w['cardNumber'].toString();
-        return name.contains(_search.toLowerCase()) || card.contains(_search);
-      }).toList();
-    }
-
-    // সুপারফাস্ট এর জন্য প্রথমে ৫০ জন দেখাই, বাকি নিচে টান দিলে আসবে
-    if (list.length > 50) {
-      _showWorkers = list.sublist(0, 50);
-    } else {
-      _showWorkers = list;
-    }
+  List<Map<String, String>> get _filtered {
+    return _allWorkers.where((w) {
+      final matchSearch = _search.isEmpty ||
+          w['name']!.toLowerCase().contains(_search.toLowerCase()) ||
+          w['id']!.toLowerCase().contains(_search.toLowerCase());
+      final matchFilter = _filter == 'All' || w['role'] == _filter;
+      return matchSearch && matchFilter;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A2F), // Navy
+      backgroundColor: KormiColors.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A1A2F),
-        title: const Text(
-          'শ্রমিকের তালিকা',
-          style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
+        backgroundColor: KormiColors.navy,
+        foregroundColor: KormiColors.goldLight,
+        title: const Text('Workers'),
       ),
       body: Column(
         children: [
-          // উপরে খোঁজার জায়গা, বড় করে
+          // সার্চ
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'নাম বা কার্ড নম্বর দিয়ে খুঁজুন...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+              onChanged: (v) => setState(() => _search = v),
+              decoration: InputDecoration(
+                hintText: 'Search Name / Card ID',
+                prefixIcon: const Icon(Icons.search, color: KormiColors.textGrey),
                 filled: true,
                 fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: const BorderSide(color: KormiColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: const BorderSide(color: KormiColors.border),
+                ),
               ),
-              onChanged: (value) {
-                _search = value;
-                _filterWorkers(); // টাইপ করলেই সাথে সাথে খুঁজবে
-                setState(() {});
-              },
             ),
           ),
-
-          // OCR বাটন, ছবি তুলে শ্রমিক যোগ করা যাবে
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: OcrCameraButton(
-              label: 'ছবি দিয়ে শ্রমিক যোগ করুন',
-              onImagePicked: (image) {
-                // ছবি পেলে পরে OCR করে নাম + কার্ড নম্বর বসাবো
-                if (image != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('ছবি পেয়েছি, এখন OCR চলবে...')),
-                  );
-                }
-              },
+          // ফিল্টার চিপ
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              children: ['All', 'Worker', 'Officer', 'Management', 'Admin'].map((f) {
+                final active = _filter == f;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(f),
+                    selected: active,
+                    selectedColor: KormiColors.navy,
+                    labelStyle: TextStyle(
+                      color: active ? KormiColors.goldLight : KormiColors.navy,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    backgroundColor: Colors.white,
+                    onSelected: (_) => setState(() => _filter = f),
+                  ),
+                );
+              }).toList(),
             ),
           ),
           const SizedBox(height: 10),
-
-          // শ্রমিকের লিস্ট
+          // লিস্ট
           Expanded(
             child: ListView.builder(
-              itemCount: _showWorkers.length,
-              itemBuilder: (context, index) {
-                final w = _showWorkers[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFFD4AF37),
-                      child: Text(
-                        w['cardNumber'].toString(), // কার্ড নম্বর বড় করে
-                        style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              itemCount: _filtered.length,
+              itemBuilder: (context, i) {
+                final w = _filtered[i];
+                final isPending = w['status'] == 'Pending';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: KormiCard(
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 26,
+                          backgroundColor: KormiColors.navy,
+                          child: Text(
+                            w['name']!.substring(0, 1),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      w['name']!,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 16),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: isPending ? Colors.orange.withOpacity(0.15) : KormiColors.green.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      w['status']!,
+                                      style: TextStyle(
+                                        color: isPending ? Colors.orange : KormiColors.green,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${w['id']} • ${w['role']} • ${w['desg']}',
+                                style: const TextStyle(color: KormiColors.textGrey, fontSize: 12),
+                              ),
+                              Text(
+                                'Shift ${w['shift']} • ${w['section']} • ${w['unit']}',
+                                style: const TextStyle(color: KormiColors.textGrey, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    // কার্ড নম্বর আগে, তারপর নাম - তুমি যেভাবে বলছিলা
-                    title: Text(
-                      '${w['cardNumber']} - ${w['name']}',
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      'সেকশন: ${w['section'] ?? ''} | ফোন: ${w['phone'] ?? ''}',
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      // টিপ দিলে ওই শ্রমিকের ডিটেইলস দেখাবে, পরে File-এ আসবে
-                    },
                   ),
                 );
               },
             ),
           ),
-
-          // নিচে বড় যোগ বাটন
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37)),
-                onPressed: () {
-                  // নতুন শ্রমিক যোগ করার ফর্ম পরে আসবে
-                },
-                child: const Text(
-                  '+ নতুন শ্রমিক যোগ করুন',
-                  style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ),
         ],
+      ),
+      // Add Worker - Admin Add User
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: KormiColors.navy,
+        foregroundColor: KormiColors.goldLight,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+          );
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Add Worker', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
