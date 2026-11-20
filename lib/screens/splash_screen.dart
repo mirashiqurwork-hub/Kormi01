@@ -1,9 +1,9 @@
-// Splash Screen - অ্যাপ খুললে প্রথম স্ক্রিন
-// KORMI লোগো + ফ্যাক্টরি + চিমনি ধোঁয়া। ২ সেকেন্ড পর Login / Home এ যাবে।
+// KORMI - Splash Screen
+// Duplicate K Logo সরানো - User পরে আসল Logo দিবে
+// এখন শুধু KORMI Text + Loading
 
 import 'package:flutter/material.dart';
-import 'widgets/app_background.dart';
-import 'package:hive/hive.dart';
+import '../theme/kormi_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,74 +16,66 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkLogin();
-  }
-
-  Future<void> _checkLogin() async {
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    bool loggedIn = false;
-    try {
-      final box = await Hive.openBox('kormi_auth');
-      loggedIn = (box.get('is_logged_in') ?? false) as bool;
-    } catch (_) {
-      loggedIn = false;
-    }
-    if (loggedIn) {
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/login');
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AppBackground(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 110,
-                height: 110,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD4AF37),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFD4AF37).withOpacity(0.4),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Text(
-                    'K',
-                    style: TextStyle(fontSize: 64, fontWeight: FontWeight.bold, color: Colors.black),
+      backgroundColor: KormiColors.navy,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Logo পরে এখানে বসবে - এখন কোনো K Logo নাই
+            Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(color: KormiColors.gold.withOpacity(0.4)),
+              ),
+              child: const Center(
+                child: Text(
+                  'KORMI',
+                  style: TextStyle(
+                    color: KormiColors.goldLight,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'KORMI',
-                style: TextStyle(
-                  color: Color(0xFFD4AF37),
-                  fontSize: 38,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 6,
-                ),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'KORMI',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 32,
+                letterSpacing: 3,
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'স্পিনিং মিল ওয়ার্কফোর্স',
-                style: TextStyle(color: Colors.white70, fontSize: 17),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Mill Management System',
+              style: TextStyle(color: KormiColors.goldLight, fontSize: 13),
+            ),
+            const SizedBox(height: 30),
+            const SizedBox(
+              width: 26,
+              height: 26,
+              child: CircularProgressIndicator(
+                color: KormiColors.goldLight,
+                strokeWidth: 2.5,
               ),
-              const SizedBox(height: 30),
-              const CircularProgressIndicator(color: Color(0xFFD4AF37)),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
