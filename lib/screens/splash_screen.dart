@@ -1,6 +1,6 @@
-// KORMI - Splash Screen
-// Duplicate K Logo সরানো - User পরে আসল Logo দিবে
-// এখন শুধু KORMI Text + Loading
+// KORMI - Splash Screen - FINAL
+// বড় K Logo নাই - শুধু KORMI Text + Gold Line
+// 2 সেকেন্ড পর Login এ যাবে
 
 import 'package:flutter/material.dart';
 import '../theme/kormi_theme.dart';
@@ -30,50 +30,41 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo পরে এখানে বসবে - এখন কোনো K Logo নাই
+            // Logo Area - আসল Logo পরে এখানে বসবে
+            // এখন শুধু Text, বড় K Logo নাই
             Container(
-              width: 110,
-              height: 110,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(26),
-                border: Border.all(color: KormiColors.gold.withOpacity(0.4)),
+                border: Border.all(color: KormiColors.gold.withOpacity(0.5)),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: const Center(
-                child: Text(
-                  'KORMI',
-                  style: TextStyle(
-                    color: KormiColors.goldLight,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                    letterSpacing: 1.2,
-                  ),
+              child: const Text(
+                'KORMI',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 38,
+                  letterSpacing: 6,
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
+            Container(width: 80, height: 2, color: KormiColors.gold),
+            const SizedBox(height: 12),
             const Text(
-              'KORMI',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 32,
-                letterSpacing: 3,
-              ),
+              'SPINNING MILL WORKFORCE',
+              style: TextStyle(color: KormiColors.goldLight, fontSize: 11, letterSpacing: 3),
             ),
             const SizedBox(height: 6),
             const Text(
-              'Mill Management System',
-              style: TextStyle(color: KormiColors.goldLight, fontSize: 13),
+              'Kumira Spinning Mill',
+              style: TextStyle(color: Colors.white70, fontSize: 12),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 40),
             const SizedBox(
-              width: 26,
-              height: 26,
-              child: CircularProgressIndicator(
-                color: KormiColors.goldLight,
-                strokeWidth: 2.5,
-              ),
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(color: KormiColors.gold, strokeWidth: 2),
             ),
           ],
         ),
