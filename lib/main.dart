@@ -1,15 +1,10 @@
-// KORMI - Main Entry - FINAL WIRING
-// Theme + Splash -> Login -> Main (Dashboard + All Modules)
-
 import 'package:flutter/material.dart';
-import 'theme/kormi_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
-import 'screens/main_screen.dart';
+import 'screens/main_navigation_screen.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
   runApp(const KormiApp());
 }
 
@@ -21,17 +16,24 @@ class KormiApp extends StatelessWidget {
     return MaterialApp(
       title: 'KORMI',
       debugShowCheckedModeBanner: false,
-      theme: KormiTheme.lightTheme,
-      // Splash -> Login -> Main Flow
+      theme: ThemeData(
+        primaryColor: const Color(0xFF0A1E3C),
+        scaffoldBackgroundColor: const Color(0xFFF6F1E7),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF0A1E3C),
+          primary: const Color(0xFF0A1E3C),
+          secondary: const Color(0xFFD4AF6A),
+        ),
+        useMaterial3: true,
+        fontFamily: 'Roboto',
+      ),
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
-        '/main': (context) => const MainScreen(),
+        '/main': (context) => const MainNavigationScreen(),
       },
-      // Fallback - কোনো Route না মিললে Splash দেখাবে
-      onUnknownRoute: (settings) => MaterialPageRoute(builder: (_) => const SplashScreen()),
     );
   }
 }
