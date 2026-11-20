@@ -1,7 +1,8 @@
-// Location Screen - লোকেশন
-// কে কোথায় আছে, লাইভ লোকেশন দেখা যাবে।
+// KORMI - Location Screen
+// Live Location + Worker Location + Mill Location
 
 import 'package:flutter/material.dart';
+import '../theme/kormi_theme.dart';
 
 class LocationScreen extends StatefulWidget {
   const LocationScreen({super.key});
@@ -11,100 +12,294 @@ class LocationScreen extends StatefulWidget {
 }
 
 class _LocationScreenState extends State<LocationScreen> {
-  // ডেমো লোকেশন লিস্ট
-  List<Map<String, String>> _locations = [
-    {'name': 'ফাতেমা আক্তার', 'unit': 'Unit 1', 'place': 'মিলের ভিতরে - রিং সেকশন', 'time': '৫ মিনিট আগে'},
-    {'name': 'মোঃ রহিম', 'unit': 'Unit 1', 'place': 'মিলের ভিতরে - ব্যাক সাইড', 'time': '২ মিনিট আগে'},
-    {'name': 'করিম মিয়া', 'unit': 'Unit 2', 'place': 'মিলের বাইরে', 'time': '১০ মিনিট আগে'},
+  String _filter = 'All';
+  String _selectedMill = 'All Mills';
+
+  final List<Map<String, dynamic>> _locations = [
+    {
+      'name': 'Tariqul Islam',
+      'role': 'CHIEF MILL ADMINISTRATOR',
+      'place': 'Unit 1 • Ring Section',
+      'time': '2 min ago',
+      'status': 'Inside Mill',
+      'color': KormiColors.green,
+    },
+    {
+      'name': 'Rahim Uddin',
+      'role': 'Shift Incharge - P/B',
+      'place': 'Unit 1 • Carding',
+      'time': '5 min ago',
+      'status': 'Inside Mill',
+      'color': KormiColors.green,
+    },
+    {
+      'name': 'Karim Sheikh',
+      'role': 'Worker - Ring',
+      'place': 'Unit 2 • Ring Section',
+      'time': '12 min ago',
+      'status': 'Inside Mill',
+      'color': KormiColors.green,
+    },
+    {
+      'name': 'Nasir Ahmed',
+      'role': 'Officer - Production',
+      'place': 'Outside • Kumira Bazar',
+      'time': '28 min ago',
+      'status': 'Outside',
+      'color': KormiColors.red,
+    },
+    {
+      'name': 'Jashim Uddin',
+      'role': 'Worker - Packing',
+      'place': 'Unit 1 • Packing',
+      'time': '1 min ago',
+      'status': 'Inside Mill',
+      'color': KormiColors.green,
+    },
   ];
 
-  bool _liveOn = false;
+  List<Map<String, dynamic>> get _filtered {
+    if (_filter == 'Inside') {
+      return _locations.where((e) => e['status'] == 'Inside Mill').toList();
+    }
+    if (_filter == 'Outside') {
+      return _locations.where((e) => e['status'] == 'Outside').toList();
+    }
+    return _locations;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final inside = _locations.where((e) => e['status'] == 'Inside Mill').length;
+    final outside = _locations.length - inside;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A2F),
+      backgroundColor: KormiColors.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A1A2F),
-        title: const Text(
-          'লোকেশন',
-          style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
+        backgroundColor: KormiColors.navy,
+        foregroundColor: KormiColors.goldLight,
+        title: const Text('Location'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.my_location_outlined),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('আপনার Live Location আপডেট করা হয়েছে')),
+              );
+            },
+          ),
+        ],
       ),
-      body: Column(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            // Map Placeholder - Premium Navy Card
+            Container(
+              width: double.infinity,
+              height: 210,
+              decoration: BoxDecoration(
+                color: KormiColors.navy,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: KormiColors.gold.withOpacity(0.3)),
+              ),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: KormiColors.gold.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.location_on_outlined, color: KormiColors.goldLight, size: 36),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text('Kumira • Chittagong',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
+                        const Text('Mill Location • 22.48° N, 91.71° E',
+                            style: TextStyle(color: KormiColors.goldLight, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.circle, color: KormiColors.green, size: 8),
+                          SizedBox(width: 6),
+                          Text('Live', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: KormiColors.navy)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 12,
+                    left: 12,
+                    right: 12,
+                    child: Row(
+                      children: [
+                        Expanded(child: _mapStat('Inside', '$inside', KormiColors.green)),
+                        const SizedBox(width: 8),
+                        Expanded(child: _mapStat('Outside', '$outside', KormiColors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Mill Selector
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: KormiColors.border),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedMill,
+                        isExpanded: true,
+                        items: ['All Mills', 'Mill 1 - Kumira', 'Mill 2 - Sitakunda', 'Mill 3 - Bhatiary']
+                            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                            .toList(),
+                        onChanged: (v) => setState(() => _selectedMill = v!),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: KormiPrimaryButton(
+                    label: 'Refresh',
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Location Refresh করা হয়েছে')),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // Filter chips
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: ['All', 'Inside', 'Outside'].map((f) {
+                  final active = _filter == f;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _filter = f),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: active ? KormiColors.navy : Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(color: KormiColors.border),
+                        ),
+                        child: Text(f,
+                            style: TextStyle(
+                                color: active ? KormiColors.goldLight : KormiColors.navy,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13)),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Location List
+            ..._filtered.map((loc) {
+              final insideMill = loc['status'] == 'Inside Mill';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: KormiCard(
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: (loc['color'] as Color).withOpacity(0.12),
+                        child: Text((loc['name'] as String)[0],
+                            style: TextStyle(fontWeight: FontWeight.bold, color: loc['color'] as Color, fontSize: 18)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(loc['name'], style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 15)),
+                            Text(loc['role'], style: const TextStyle(color: KormiColors.textGrey, fontSize: 11)),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on_outlined, size: 14, color: KormiColors.textGrey),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(loc['place'],
+                                      style: const TextStyle(color: KormiColors.navy, fontSize: 13)),
+                                ),
+                              ],
+                            ),
+                            Text('Updated ${loc['time']}', style: const TextStyle(color: KormiColors.textGrey, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: insideMill ? KormiColors.green.withOpacity(0.12) : KormiColors.red.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(loc['status'],
+                            style: TextStyle(
+                                color: insideMill ? KormiColors.green : KormiColors.red,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11)),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 8),
+            const Text(
+              'Location শুধু Admin / Management দেখতে পারবে। Worker শুধু নিজের Location দেখবে।',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: KormiColors.textGrey, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _mapStat(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // উপরে ম্যাপের জায়গা, পরে আসল ম্যাপ আসবে
-          Container(
-            height: 200,
-            width: double.infinity,
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white12,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.4)),
-            ),
-            child: const Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.map, size: 50, color: Color(0xFFD4AF37)),
-                SizedBox(height: 8),
-                Text(
-                  'ম্যাপ এখানে দেখা যাবে',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-                Text(
-                  'Private করার পর আসল ম্যাপ চালু হবে',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          // লাইভ লোকেশন অন / অফ
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'আমার লাইভ লোকেশন শেয়ার করুন',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ),
-                Switch(
-                  value: _liveOn,
-                  activeColor: const Color(0xFFD4AF37),
-                  onChanged: (v) => setState(() => _liveOn = v),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          // কে কোথায় আছে লিস্ট
-          Expanded(
-            child: ListView.builder(
-              itemCount: _locations.length,
-              itemBuilder: (context, index) {
-                final item = _locations[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: ListTile(
-                    leading: const CircleAvatar(
-                      backgroundColor: Color(0xFFD4AF37),
-                      child: Icon(Icons.location_on, color: Colors.black),
-                    ),
-                    title: Text(
-                      item['name']!,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text('${item['unit']} - ${item['place']}'),
-                    trailing: Text(item['time']!, style: const TextStyle(fontSize: 12)),
-                    onTap: () {},
-                  ),
-                );
-              },
-            ),
-          ),
+          Icon(Icons.circle, color: color, size: 8),
+          const SizedBox(width: 6),
+          Text('$label: $value', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
         ],
       ),
     );
