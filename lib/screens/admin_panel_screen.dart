@@ -1,21 +1,21 @@
-// KORMI - Admin Screen
-// Admin Panel: Shifts / Access / Mills / Backup / Audit / Companies
+// KORMI - Admin Panel Screen
+// Admin Panel: Access / Shifts / Mills / Audit / Backup / Companies
 // শুধু ADMIN / Management দেখতে পারবে
 
 import 'package:flutter/material.dart';
 import '../theme/kormi_theme.dart';
 
-class AdminScreen extends StatefulWidget {
-  const AdminScreen({super.key});
+class AdminPanelScreen extends StatefulWidget {
+  const AdminPanelScreen({super.key});
 
   @override
-  State<AdminScreen> createState() => _AdminScreenState();
+  State<AdminPanelScreen> createState() => _AdminPanelScreenState();
 }
 
-class _AdminScreenState extends State<AdminScreen> {
+class _AdminPanelScreenState extends State<AdminPanelScreen> {
   int _tab = 0;
 
-  // Access - Pending Approvals
+  // Pending Approvals
   final List<Map<String, dynamic>> _pending = [
     {'name': 'Karim Sheikh', 'card': 'K-1042', 'role': 'Worker', 'company': 'Mill 1 - Kumira', 'approved': false},
     {'name': 'Nasir Ahmed', 'card': 'K-1043', 'role': 'Officer', 'company': 'Mill 1 - Kumira', 'approved': false},
@@ -77,7 +77,6 @@ class _AdminScreenState extends State<AdminScreen> {
             const SizedBox(height: 14),
 
             if (_tab == 0) ...[
-              // Pending Approvals
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -85,6 +84,11 @@ class _AdminScreenState extends State<AdminScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
                   TextButton(
                     onPressed: () {
+                      setState(() {
+                        for (final p in _pending) {
+                          p['approved'] = true;
+                        }
+                      });
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('All Pending Approved')),
                       );
@@ -169,7 +173,6 @@ class _AdminScreenState extends State<AdminScreen> {
                 );
               }),
               const SizedBox(height: 8),
-              // Company Management
               KormiCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,7 +204,10 @@ class _AdminScreenState extends State<AdminScreen> {
             ],
 
             if (_tab == 1) ...[
-              const Text('Shift Management', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Shift Management', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+              ),
               const SizedBox(height: 10),
               ..._shifts.map((s) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
@@ -240,7 +246,10 @@ class _AdminScreenState extends State<AdminScreen> {
             ],
 
             if (_tab == 2) ...[
-              const Text('Mills / Companies', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Mills / Companies', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+              ),
               const SizedBox(height: 10),
               ..._mills.map((m) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
@@ -290,7 +299,10 @@ class _AdminScreenState extends State<AdminScreen> {
             ],
 
             if (_tab == 3) ...[
-              const Text('Audit Log', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Audit Log', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+              ),
               const SizedBox(height: 10),
               ..._audit.map((a) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
