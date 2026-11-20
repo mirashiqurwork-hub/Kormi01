@@ -6,7 +6,8 @@ import 'production_screen.dart';
 import 'profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final void Function(int)? onNavigate;
+  const DashboardScreen({super.key, this.onNavigate});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -51,6 +52,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _todayProduction = prod;
       _todayTarget = target;
     });
+  }
+
+  void _go(int index, Widget page) {
+    if (widget.onNavigate != null) {
+      widget.onNavigate!(index);
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+    }
   }
 
   Widget _statCard(String title, String value, IconData icon, Color color) {
@@ -201,24 +210,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             mainAxisSpacing: 12,
             childAspectRatio: 1.6,
             children: [
-              _actionCard('Add Worker', 'New worker add koro', Icons.person_add, () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const WorkersScreen()));
-              }),
-              _actionCard('Attendance', 'Present / Absent dao', Icons.check_circle, () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceScreen()));
-              }),
-              _actionCard('Production', 'Production entry dao', Icons.factory, () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductionScreen()));
-              }),
-              _actionCard('Calculator', 'Efficiency hisab koro', Icons.calculate, () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductionScreen()));
-              }),
-              _actionCard('Workers List', 'Sob worker dekho', Icons.list, () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const WorkersScreen()));
-              }),
-              _actionCard('My Profile', 'Profile dekho', Icons.person, () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
-              }),
+              _actionCard('Add Worker', 'New worker add koro', Icons.person_add, () { _go(1, const WorkersScreen()); }),
+              _actionCard('Attendance', 'Present / Absent dao', Icons.check_circle, () { _go(2, const AttendanceScreen()); }),
+              _actionCard('Production', 'Production entry dao', Icons.factory, () { _go(3, const ProductionScreen()); }),
+              _actionCard('Calculator', 'Efficiency hisab koro', Icons.calculate, () { _go(3, const ProductionScreen()); }),
+              _actionCard('Workers List', 'Sob worker dekho', Icons.list, () { _go(1, const WorkersScreen()); }),
+              _actionCard('My Profile', 'Profile dekho', Icons.person, () { _go(4, const ProfileScreen()); }),
             ],
           ),
         ],
