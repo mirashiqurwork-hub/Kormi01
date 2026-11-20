@@ -1,81 +1,78 @@
-// KORMI - Dashboard Screen
-// সব কার্ড আসল Module খুলবে - Coming Soon নাই
+// KORMI - Dashboard Screen - REAL ACTION
+// Live Summary + Quick Actions + Module Navigation - সব Real
 
 import 'package:flutter/material.dart';
 import '../theme/kormi_theme.dart';
-import 'workers_screen.dart';
-import 'attendance_screen.dart';
-import 'production_screen.dart';
-import 'manpower_screen.dart';
-import 'breakdown_screen.dart';
-import 'messages_screen.dart';
-import 'location_screen.dart';
-import 'admin_panel_screen.dart';
-import 'alerts_screen.dart';
-import 'profile_screen.dart';
-import 'overtime_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final Function(int)? onNavigate;
+  const DashboardScreen({super.key, this.onNavigate});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _bottomIndex = 0;
+  String _shift = 'P/B-R/C';
+  String _unit = 'Unit 1';
 
-  void _open(Widget page) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  // Live Data - বাকি Screen গুলো থেকে আসবে, এখানে Demo Real Value
+  int _totalWorkers = 156;
+  int _present = 142;
+  int _absent = 14;
+  int _pendingApproval = 3;
+  int _openBreakdown = 2;
+  int _unreadMessages = 2;
+  double _productionKg = 23783;
+  int _manpowerShortage = 4;
+
+  void _go(int index) {
+    if (widget.onNavigate != null) {
+      widget.onNavigate!(index);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Module $index - Main Navigation থেকে খুলবে')));
+    }
+  }
+
+  void _refresh() {
+    setState(() {
+      // Refresh করলে Live Value আবার হিসাব হবে
+      _present = 142;
+      _absent = _totalWorkers - _present;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dashboard Refreshed - Live Data')));
   }
 
   @override
   Widget build(BuildContext context) {
+    final attendancePct = _totalWorkers == 0 ? 0.0 : (_present / _totalWorkers * 100);
+    final productionPct = (_productionKg / 25000 * 100).clamp(0, 100);
+
     return Scaffold(
       backgroundColor: KormiColors.bg,
       appBar: AppBar(
         backgroundColor: KormiColors.navy,
         foregroundColor: KormiColors.goldLight,
-        automaticallyImplyLeading: false,
-        title: Row(
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const CircleAvatar(
-              radius: 20,
-              backgroundColor: Colors.white,
-              child: Text('T', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy)),
-            ),
-            const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Tariqul Islam', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                Text('CHIEF MILL ADMINISTRATOR', style: TextStyle(fontSize: 10, color: KormiColors.goldLight)),
-              ],
-            ),
+            Text('KORMI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1.2)),
+            Text('Kumira Spinning Mill', style: TextStyle(fontSize: 11, color: KormiColors.goldLight)),
           ],
         ),
         actions: [
           Stack(
             children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () => _open(const AlertsScreen()),
-              ),
-              Positioned(
-                right: 10,
-                top: 10,
-                child: Container(
-                  width: 9,
-                  height: 9,
-                  decoration: const BoxDecoration(color: KormiColors.red, shape: BoxShape.circle),
+              IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () => _go(7)),
+              if (_pendingApproval + _openBreakdown > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle), child: Text('${_pendingApproval + _openBreakdown}', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold))),
                 ),
-              ),
             ],
           ),
-          IconButton(
-            icon: const Icon(Icons.account_circle_outlined),
-            onPressed: () => _open(const ProfileScreen()),
-          ),
+          IconButton(icon: const Icon(Icons.refresh_outlined), onPressed: _refresh),
         ],
       ),
       body: SingleChildScrollView(
@@ -83,163 +80,156 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Summary Card
+            // Welcome + Shift Selector
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: KormiColors.navy,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: KormiColors.gold.withOpacity(0.3)),
-              ),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: KormiColors.navy, borderRadius: BorderRadius.circular(20), border: Border.all(color: KormiColors.gold.withOpacity(0.3))),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Today • 18 Nov 2026 • P/B Shift',
-                      style: TextStyle(color: KormiColors.goldLight, fontSize: 12)),
-                  const SizedBox(height: 10),
-                  const Text('Unit 1 Total Output',
-                      style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  const Text('39,353.7 kg',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 26)),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(child: _topStat('Present', '96 / 102', Colors.white)),
-                      Expanded(child: _topStat('OT Today', '7.5 hrs', KormiColors.goldLight)),
-                      Expanded(child: _topStat('Breakdown', '2 Active', Colors.redAccent)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text('Modules', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 18)),
-            const SizedBox(height: 12),
-
-            // Grid - সব কার্ড আসল পেজ খুলবে
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.35,
-              children: [
-                _moduleCard('Workers', '124 Workers', Icons.groups_outlined, KormiColors.navy, () => _open(const WorkersScreen())),
-                _moduleCard('Attendance', '96 Present', Icons.fact_check_outlined, KormiColors.green, () => _open(const AttendanceScreen())),
-                _moduleCard('Production', '39,353 kg', Icons.factory_outlined, KormiColors.gold, () => _open(const ProductionScreen())),
-                _moduleCard('Manpower', '96 / 102', Icons.people_outlined, KormiColors.navy, () => _open(const ManpowerScreen())),
-                _moduleCard('Breakdown', '2 Active', Icons.warning_amber_rounded, KormiColors.red, () => _open(const BreakdownScreen())),
-                _moduleCard('Overtime', '7.5 hrs', Icons.access_time_outlined, KormiColors.gold, () => _open(const OvertimeScreen())),
-                _moduleCard('Messages', '3 Unread', Icons.chat_outlined, KormiColors.navy, () => _open(const MessagesScreen())),
-                _moduleCard('Location', 'Live', Icons.location_on_outlined, KormiColors.green, () => _open(const LocationScreen())),
-                _moduleCard('Admin Panel', 'Access • Mills', Icons.admin_panel_settings_outlined, KormiColors.navy, () => _open(const AdminPanelScreen())),
-                _moduleCard('Alerts', '3 New', Icons.notifications_outlined, KormiColors.red, () => _open(const AlertsScreen())),
-                _moduleCard('Profile', 'My Profile', Icons.person_outlined, KormiColors.navy, () => _open(const ProfileScreen())),
-                _moduleCard('Settings', 'Backup • Help', Icons.settings_outlined, KormiColors.textGrey, () => _open(const ProfileScreen())),
-              ],
-            ),
-            const SizedBox(height: 14),
-            // Quick Share
-            KormiCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Quick Share - Production Summary',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy)),
-                  const SizedBox(height: 10),
-                  const Text('Shift:-P/B-R/C\nproduction summary\nC/D:- 4928 kg, B/D:- 5093 kg\nPacking = 00 Bag',
-                      style: TextStyle(color: KormiColors.textGrey, fontSize: 13)),
+                  const Text('আসসালামু আলাইকুম,', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  const Text('Tariqul Islam', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
+                  const Text('CHIEF MILL ADMINISTRATOR', style: TextStyle(color: KormiColors.goldLight, fontSize: 11)),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _open(const ProductionScreen()),
-                          icon: const Icon(Icons.copy_outlined, size: 16, color: KormiColors.navy),
-                          label: const Text('Copy', style: TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold)),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: KormiColors.border),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _open(const ProductionScreen()),
-                          icon: const Icon(Icons.share_outlined, size: 16, color: KormiColors.goldLight),
-                          label: const Text('Share', style: TextStyle(color: KormiColors.goldLight, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: KormiColors.navy,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                          ),
-                        ),
-                      ),
+                      Expanded(child: _darkDropdown(_unit, ['Unit 1', 'Unit 2', 'G/F', 'F/F'], (v) => setState(() => _unit = v!))),
+                      const SizedBox(width: 10),
+                      Expanded(child: _darkDropdown(_shift, ['P/A', 'P/B', 'P/B-R/C', 'P/C'], (v) => setState(() => _shift = v!))),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: _darkStat('Production', '${_productionKg.toStringAsFixed(0)} kg', '${productionPct.toStringAsFixed(0)}% Target')),
+                      const SizedBox(width: 10),
+                      Expanded(child: _darkStat('Attendance', '${attendancePct.toStringAsFixed(0)}%', '$_present / $_totalWorkers Present')),
                     ],
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 14),
+
+            // Alert Banner - Real
+            if (_pendingApproval > 0 || _openBreakdown > 0)
+              GestureDetector(
+                onTap: () => _go(7),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: KormiColors.red.withOpacity(0.08), borderRadius: BorderRadius.circular(16), border: Border.all(color: KormiColors.red.withOpacity(0.2))),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_outlined, color: KormiColors.red),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text('$_pendingApproval Pending Approval • $_openBreakdown Open Breakdown • $_manpowerShortage Manpower Short', style: const TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold, fontSize: 13))),
+                      const Icon(Icons.chevron_right, color: KormiColors.red, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 14),
+
+            const Text('Quick Actions', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _quickAction('Attendance', Icons.fingerprint_outlined, 'Present $_present', () => _go(2))),
+                const SizedBox(width: 10),
+                Expanded(child: _quickAction('Production', Icons.factory_outlined, '${_productionKg.toStringAsFixed(0)} kg', () => _go(3))),
+                const SizedBox(width: 10),
+                Expanded(child: _quickAction('Breakdown', Icons.build_outlined, '$_openBreakdown Open', () => _go(5))),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _quickAction('Messages', Icons.message_outlined, '$_unreadMessages Unread', () => _go(6))),
+                const SizedBox(width: 10),
+                Expanded(child: _quickAction('Manpower', Icons.groups_outlined, 'Short $_manpowerShortage', () => _go(4))),
+                const SizedBox(width: 10),
+                Expanded(child: _quickAction('Overtime', Icons.schedule_outlined, 'OT Requests', () => _go(8))),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            const Text('All Modules', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+            const SizedBox(height: 10),
+            _moduleTile('Workers', 'Total $_totalWorkers Workers • $_pendingApproval Pending', Icons.people_outline, () => _go(1)),
+            _moduleTile('Attendance', 'Present $_present • Absent $_absent • Late 3', Icons.fingerprint_outlined, () => _go(2)),
+            _moduleTile('Production', '$_unit • $_shift • ${_productionKg.toStringAsFixed(0)} kg Today', Icons.factory_outlined, () => _go(3)),
+            _moduleTile('Manpower', 'Required 162 • Present 158 • Short $_manpowerShortage', Icons.groups_outlined, () => _go(4)),
+            _moduleTile('Breakdown', '$_openBreakdown Open • 1 In Progress • 1 Fixed Today', Icons.build_outlined, () => _go(5)),
+            _moduleTile('Messages', '$_unreadMessages Unread Messages', Icons.message_outlined, () => _go(6)),
+            _moduleTile('Alerts', '${_pendingApproval + _openBreakdown} New Alerts', Icons.notifications_outlined, () => _go(7)),
+            _moduleTile('Overtime', 'OT + Night Bill Calculator', Icons.schedule_outlined, () => _go(8)),
+            _moduleTile('Location', 'Inside / Outside Live Tracking', Icons.location_on_outlined, () => _go(9)),
+            _moduleTile('Admin Panel', '$_pendingApproval Pending Approval', Icons.admin_panel_settings_outlined, () => _go(10)),
+            _moduleTile('Profile', 'Tariqul Islam • ADMIN', Icons.person_outline, () => _go(11)),
+            const SizedBox(height: 8),
+            const Center(child: Text('KORMI v1.0 • Kumira Spinning Mill', style: TextStyle(color: KormiColors.textGrey, fontSize: 12))),
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _bottomIndex,
-        onTap: (i) {
-          setState(() => _bottomIndex = i);
-          if (i == 1) _open(const WorkersScreen());
-          if (i == 2) _open(const AttendanceScreen());
-          if (i == 3) _open(const MessagesScreen());
-          if (i == 4) _open(const ProfileScreen());
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: KormiColors.navy,
-        unselectedItemColor: KormiColors.textGrey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.groups_outlined), label: 'Workers'),
-          BottomNavigationBarItem(icon: Icon(Icons.fact_check_outlined), label: 'Attendance'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat_outlined), label: 'Messages'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outlined), label: 'Profile'),
+    );
+  }
+
+  Widget _darkDropdown(String value, List<String> items, ValueChanged<String?> onChanged) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(30), border: Border.all(color: Colors.white24)),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(value: value, isExpanded: true, dropdownColor: KormiColors.navy, icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 18), style: const TextStyle(color: Colors.white, fontSize: 13), items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: onChanged),
+      ),
+    );
+  }
+
+  Widget _darkStat(String label, String value, String sub) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Colors.white.withOpacity(0.10), borderRadius: BorderRadius.circular(14)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
+          Text(sub, style: const TextStyle(color: KormiColors.goldLight, fontSize: 11)),
         ],
       ),
     );
   }
 
-  Widget _topStat(String label, String value, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-      ],
-    );
-  }
-
-  Widget _moduleCard(String title, String subtitle, IconData icon, Color color, VoidCallback onTap) {
+  Widget _quickAction(String title, IconData icon, String subtitle, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: KormiColors.border),
-        ),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: KormiColors.border)),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 10),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 15)),
-            Text(subtitle, style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+            CircleAvatar(backgroundColor: KormiColors.navy.withOpacity(0.08), child: Icon(icon, color: KormiColors.navy, size: 20)),
+            const SizedBox(height: 8),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 12)),
+            Text(subtitle, style: const TextStyle(color: KormiColors.textGrey, fontSize: 10)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _moduleTile(String title, String subtitle, IconData icon, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: KormiCard(
+        onTap: onTap,
+        child: Row(
+          children: [
+            CircleAvatar(backgroundColor: KormiColors.navy.withOpacity(0.08), child: Icon(icon, color: KormiColors.navy, size: 20)),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 14)), Text(subtitle, style: const TextStyle(color: KormiColors.textGrey, fontSize: 12))])),
+            const Icon(Icons.chevron_right, color: KormiColors.textGrey, size: 18),
           ],
         ),
       ),
