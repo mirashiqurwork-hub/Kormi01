@@ -1,113 +1,122 @@
-// KORMI - Theme File - File 1
-// স্ক্রিনশটের হুবহু কালার + স্টাইল
-// এই ফাইলটা সব পেজ ব্যবহার করবে, তাই ডিজাইন একরকম থাকবে
+// KORMI - Theme
+// Ultra-Premium Classy Navy + Light Gold / Glass Look
+// সব Screen এই Theme ব্যবহার করে
 
 import 'package:flutter/material.dart';
 
 class KormiColors {
-  // উপরের বার + বটম বার + বড় বাটন - ডার্ক নেভি
-  static const Color navy = Color(0xFF0A1E4A);
-  static const Color navyLight = Color(0xFF12294F);
-
-  // গোল্ডেন লেখা + আইকন - হালকা গোল্ড, চোখে লাগা হলুদ না
-  static const Color gold = Color(0xFFD4AF37);
-  static const Color goldLight = Color(0xFFE8D5A8);
-
-  // পেজের বডি - হালকা ধূসর-সাদা, ছবির মতো
-  static const Color bg = Color(0xFFF2F4F7);
-
-  // কার্ড - সাদা
-  static const Color card = Colors.white;
-
-  // লেখা
-  static const Color textDark = Color(0xFF0A1E4A);
-  static const Color textGrey = Color(0xFF6B7A8F);
-  static const Color textLight = Colors.white;
-
-  // সবুজ - Allowed / On
-  static const Color green = Color(0xFF1B8C4A);
-
-  // লাল - Alerts ডট / Pending
-  static const Color red = Color(0xFFE53935);
-
-  // কার্ডের বর্ডার - খুব হালকা
-  static const Color border = Color(0xFFE5E8EC);
+  static const Color navy = Color(0xFF0F2A4A);
+  static const Color navyDark = Color(0xFF0A1E35);
+  static const Color gold = Color(0xFFC9A86A);
+  static const Color goldLight = Color(0xFFE8D5A3);
+  static const Color bg = Color(0xFFF4F6F8);
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color textGrey = Color(0xFF64748B);
+  static const Color green = Color(0xFF16A34A);
+  static const Color red = Color(0xFFDC2626);
+  static const Color white = Colors.white;
 }
 
 class KormiTheme {
-  static ThemeData get light {
+  static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: KormiColors.bg,
       primaryColor: KormiColors.navy,
+      scaffoldBackgroundColor: KormiColors.bg,
+      colorScheme: const ColorScheme.light(
+        primary: KormiColors.navy,
+        secondary: KormiColors.gold,
+        surface: Colors.white,
+        background: KormiColors.bg,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: KormiColors.navy,
         foregroundColor: KormiColors.goldLight,
         elevation: 0,
         centerTitle: false,
-      ),
-      // সব লেখার ডিফল্ট স্টাইল
-      textTheme: const TextTheme(
-        titleLarge: TextStyle(
-          color: KormiColors.textDark,
+        titleTextStyle: TextStyle(
+          color: KormiColors.goldLight,
+          fontSize: 19,
           fontWeight: FontWeight.bold,
-          fontSize: 20,
         ),
-        bodyMedium: TextStyle(
-          color: KormiColors.textDark,
-          fontSize: 15,
+        iconTheme: IconThemeData(color: KormiColors.goldLight),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: KormiColors.navy,
+          foregroundColor: KormiColors.goldLight,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
         ),
-        bodySmall: TextStyle(
-          color: KormiColors.textGrey,
-          fontSize: 13,
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Colors.white,
+        selectedItemColor: KormiColors.navy,
+        unselectedItemColor: KormiColors.textGrey,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(vertical: 13, horizontal: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: KormiColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: KormiColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: KormiColors.navy, width: 1.5),
         ),
       ),
     );
   }
 }
 
-// সাদা কার্ড - সব পেজে একই রকম, ছবির মতো গোল কর্নার + হালকা শ্যাডো
+// Common Card - সব Screen এ ব্যবহার হয়
 class KormiCard extends StatelessWidget {
   final Widget child;
-  final EdgeInsetsGeometry padding;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry? padding;
 
-  const KormiCard({
-    super.key,
-    required this.child,
-    this.padding = const EdgeInsets.all(16),
-  });
+  const KormiCard({super.key, required this.child, this.onTap, this.padding});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: KormiColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: KormiColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: padding ?? const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: KormiColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: child,
       ),
-      child: child,
     );
   }
 }
 
-// বড় বাটন - ডার্ক নেভি ব্যাকগ্রাউন্ড + গোল্ডেন লেখা, ছবির মতো
+// Common Primary Button
 class KormiPrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
 
-  const KormiPrimaryButton({
-    super.key,
-    required this.label,
-    this.onPressed,
-  });
+  const KormiPrimaryButton({super.key, required this.label, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -118,18 +127,10 @@ class KormiPrimaryButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: KormiColors.navy,
           foregroundColor: KormiColors.goldLight,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          padding: const EdgeInsets.symmetric(vertical: 14),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
       ),
     );
   }
