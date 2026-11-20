@@ -1,24 +1,15 @@
-// KORMI - Main Entry
-// Login -> Dashboard, সব Module আসল পেজ খুলবে
+// KORMI - Main Entry - FINAL WIRING
+// Theme + Splash -> Login -> Main (Dashboard + All Modules)
 
 import 'package:flutter/material.dart';
 import 'theme/kormi_theme.dart';
+import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/dashboard_screen.dart';
 import 'screens/register_screen.dart';
-import 'screens/workers_screen.dart';
-import 'screens/attendance_screen.dart';
-import 'screens/production_screen.dart';
-import 'screens/manpower_screen.dart';
-import 'screens/breakdown_screen.dart';
-import 'screens/messages_screen.dart';
-import 'screens/location_screen.dart';
-import 'screens/admin_panel_screen.dart';
-import 'screens/alerts_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/overtime_screen.dart';
+import 'screens/main_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const KormiApp());
 }
 
@@ -31,27 +22,16 @@ class KormiApp extends StatelessWidget {
       title: 'KORMI',
       debugShowCheckedModeBanner: false,
       theme: KormiTheme.lightTheme,
-      initialRoute: '/login',
+      // Splash -> Login -> Main Flow
+      initialRoute: '/',
       routes: {
+        '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
         '/register': (context) => const RegisterScreen(),
-        '/workers': (context) => const WorkersScreen(),
-        '/attendance': (context) => const AttendanceScreen(),
-        '/production': (context) => const ProductionScreen(),
-        '/manpower': (context) => const ManpowerScreen(),
-        '/breakdown': (context) => const BreakdownScreen(),
-        '/messages': (context) => const MessagesScreen(),
-        '/location': (context) => const LocationScreen(),
-        '/admin': (context) => const AdminPanelScreen(),
-        '/admin-panel': (context) => const AdminPanelScreen(),
-        '/alerts': (context) => const AlertsScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/overtime': (context) => const OvertimeScreen(),
+        '/main': (context) => const MainScreen(),
       },
-      onUnknownRoute: (settings) {
-        return MaterialPageRoute(builder: (_) => const LoginScreen());
-      },
+      // Fallback - কোনো Route না মিললে Splash দেখাবে
+      onUnknownRoute: (settings) => MaterialPageRoute(builder: (_) => const SplashScreen()),
     );
   }
 }
