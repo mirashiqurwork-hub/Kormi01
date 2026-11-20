@@ -33,15 +33,9 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
-      - name: Fix Unsupported Gradle Project
+      - name: Generate App Icon From Logo
         run: |
-          cp -r lib /tmp/lib_backup
-          cp pubspec.yaml /tmp/pubspec_backup.yaml
-          rm -rf android
-          flutter create -t app --platforms=android --org com.example --project-name kormi .
-          cp -r /tmp/lib_backup/* lib/
-          cp /tmp/pubspec_backup.yaml pubspec.yaml
-          flutter pub get
+          if [ -f assets/images/logo.png ]; then dart run flutter_launcher_icons; else echo "No logo.png found, skip icon generation"; fi
 
       - name: Build APK Release
         run: flutter build apk --release
