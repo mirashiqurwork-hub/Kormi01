@@ -1,143 +1,368 @@
-// Admin Panel Screen - অ্যাডমিন প্যানেল
-// শুধু Admin / Management দেখতে পারবে। Pending শ্রমিক Approve, কোম্পানি, Shift, Night Bill।
+// KORMI - Admin Screen
+// Admin Panel: Shifts / Access / Mills / Backup / Audit / Companies
+// শুধু ADMIN / Management দেখতে পারবে
 
 import 'package:flutter/material.dart';
+import '../theme/kormi_theme.dart';
 
-class AdminPanelScreen extends StatefulWidget {
-  const AdminPanelScreen({super.key});
+class AdminScreen extends StatefulWidget {
+  const AdminScreen({super.key});
 
   @override
-  State<AdminPanelScreen> createState() => _AdminPanelScreenState();
+  State<AdminScreen> createState() => _AdminScreenState();
 }
 
-class _AdminPanelScreenState extends State<AdminPanelScreen> {
-  // Pending শ্রমিক, ডেমো
-  List<Map<String, String>> _pending = [
-    {'name': 'নতুন শ্রমিক ১', 'card': '105', 'unit': 'Unit 1', 'shift': 'P/B'},
-    {'name': 'নতুন শ্রমিক ২', 'card': '106', 'unit': 'Unit 1', 'shift': 'P/A'},
+class _AdminScreenState extends State<AdminScreen> {
+  int _tab = 0;
+
+  // Access - Pending Approvals
+  final List<Map<String, dynamic>> _pending = [
+    {'name': 'Karim Sheikh', 'card': 'K-1042', 'role': 'Worker', 'company': 'Mill 1 - Kumira', 'approved': false},
+    {'name': 'Nasir Ahmed', 'card': 'K-1043', 'role': 'Officer', 'company': 'Mill 1 - Kumira', 'approved': false},
   ];
 
-  // কোম্পানি অনুযায়ী Night Bill
-  Map<String, String> _nightBill = {
-    'Company 1': '150',
-    'Company 2': '180',
-  };
+  // Mills
+  final List<Map<String, String>> _mills = [
+    {'name': 'Mill 1 - Kumira', 'workers': '124', 'status': 'Active'},
+    {'name': 'Mill 2 - Sitakunda', 'workers': '86', 'status': 'Active'},
+    {'name': 'Mill 3 - Bhatiary', 'workers': '42', 'status': 'Active'},
+  ];
 
-  String _rotationDay = 'শুক্রবার';
+  // Shifts
+  final List<Map<String, String>> _shifts = [
+    {'name': 'P/A', 'time': '06:00 AM - 02:00 PM', 'workers': '48'},
+    {'name': 'P/B', 'time': '02:00 PM - 10:00 PM', 'workers': '52'},
+    {'name': 'P/C', 'time': '10:00 PM - 06:00 AM', 'workers': '44'},
+    {'name': 'P/B-R/C', 'time': '02:00 PM - 06:00 AM', 'workers': '18'},
+  ];
 
-  void _approve(int index) {
-    setState(() => _pending.removeAt(index));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Approve হয়ে গেছে')),
-    );
-  }
-
-  void _reject(int index) {
-    setState(() => _pending.removeAt(index));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Reject করা হইছে')),
-    );
-  }
-
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title,
-          style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
+  // Audit Log
+  final List<Map<String, String>> _audit = [
+    {'action': 'Approved Worker K-1042', 'by': 'ADMIN', 'time': '10:42 AM'},
+    {'action': 'Added New Company - Mill 3', 'by': 'ADMIN', 'time': '09:15 AM'},
+    {'action': 'Breakdown Logged RF-14', 'by': 'Tariqul Islam', 'time': '08:30 AM'},
+    {'action': 'Production Saved Unit 1', 'by': 'Rahim Uddin', 'time': 'Yesterday'},
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1A2F),
+      backgroundColor: KormiColors.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A1A2F),
-        title: const Text(
-          'অ্যাডমিন প্যানেল',
-          style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
+        backgroundColor: KormiColors.navy,
+        foregroundColor: KormiColors.goldLight,
+        title: const Text('Admin Panel'),
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.all(14),
         child: Column(
           children: [
-            _sectionTitle('Pending শ্রমিক Approve করুন'),
-            if (_pending.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(12),
-                child: Text('কোনো Pending শ্রমিক নাই', style: TextStyle(color: Colors.white)),
+            // Tabs
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: KormiColors.border),
               ),
-            ..._pending.asMap().entries.map((e) {
-              final index = e.key;
-              final w = e.value;
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: ListTile(
-                  title: Text('${w['card']} - ${w['name']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Unit: ${w['unit']} | Shift: ${w['shift']}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.check, color: Colors.green),
-                        onPressed: () => _approve(index),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.red),
-                        onPressed: () => _reject(index),
-                      ),
-                    ],
+              child: Row(
+                children: [
+                  _tabBtn('Access', 0),
+                  _tabBtn('Shifts', 1),
+                  _tabBtn('Mills', 2),
+                  _tabBtn('Audit', 3),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            if (_tab == 0) ...[
+              // Pending Approvals
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Pending Approvals (${_pending.length})',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+                  TextButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('All Pending Approved')),
+                      );
+                    },
+                    child: const Text('Approve All', style: TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold)),
                   ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ..._pending.map((p) {
+                final approved = p['approved'] as bool;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: KormiCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(p['name'], style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 15)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: approved ? KormiColors.green.withOpacity(0.12) : KormiColors.gold.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(approved ? 'Approved' : 'Pending',
+                                  style: TextStyle(
+                                      color: approved ? KormiColors.green : KormiColors.gold,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text('Card: ${p['card']} • Role: ${p['role']} • ${p['company']}',
+                            style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: approved
+                                    ? null
+                                    : () {
+                                        setState(() => p['approved'] = true);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('${p['name']} Approved')),
+                                        );
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: KormiColors.navy,
+                                  foregroundColor: KormiColors.goldLight,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                                ),
+                                child: Text(approved ? 'Approved' : 'Approve',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  setState(() => _pending.remove(p));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('${p['name']} Rejected')),
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: KormiColors.border),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                                ),
+                                child: const Text('Reject', style: TextStyle(color: KormiColors.red, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+              // Company Management
+              KormiCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Companies', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 16)),
+                    const SizedBox(height: 10),
+                    ..._mills.map((m) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(m['name']!, style: const TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold)),
+                              Text('${m['workers']} Workers', style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+                            ],
+                          ),
+                        )),
+                    const SizedBox(height: 10),
+                    KormiPrimaryButton(
+                      label: '+ Add New Company',
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Add Company - শুধু Admin করতে পারবে')),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-              );
-            }),
-            _sectionTitle('Shift Rotation'),
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: ListTile(
-                title: const Text('Rotation Day: শুক্রবার'),
-                subtitle: Text('নিয়ম: Permanent Shift একই থাকবে, শুধু Running Shift ঘুরবে - Night -> B, B -> সকাল, সকাল -> Night'),
               ),
-            ),
-            _sectionTitle('Night Bill - কোম্পানি অনুযায়ী'),
-            ..._nightBill.entries.map((e) {
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: ListTile(
-                  title: Text(e.key),
-                  trailing: Text('${e.value} টাকা', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+
+            if (_tab == 1) ...[
+              const Text('Shift Management', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+              const SizedBox(height: 10),
+              ..._shifts.map((s) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: KormiCard(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(color: KormiColors.navy, borderRadius: BorderRadius.circular(12)),
+                            child: Text(s['name']!, style: const TextStyle(color: KormiColors.goldLight, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(s['time']!, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy)),
+                                Text('${s['workers']} Workers', style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.edit_outlined, color: KormiColors.textGrey, size: 20),
+                        ],
+                      ),
+                    ),
+                  )),
+              const SizedBox(height: 8),
+              KormiPrimaryButton(
+                label: '+ Add New Shift',
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Add Shift - Admin Only')),
+                  );
+                },
+              ),
+            ],
+
+            if (_tab == 2) ...[
+              const Text('Mills / Companies', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+              const SizedBox(height: 10),
+              ..._mills.map((m) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: KormiCard(
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: KormiColors.navy.withOpacity(0.1),
+                            child: const Icon(Icons.factory_outlined, color: KormiColors.navy),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(m['name']!, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy)),
+                                Text('${m['workers']} Workers • ${m['status']}',
+                                    style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, color: KormiColors.textGrey),
+                        ],
+                      ),
+                    ),
+                  )),
+              const SizedBox(height: 8),
+              KormiCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Backup & Data', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 16)),
+                    const SizedBox(height: 10),
+                    const Text('ডাটা ফোনে থাকে, Logout করলেও মুছবে না। শুধু Lock হবে।',
+                        style: TextStyle(color: KormiColors.textGrey, fontSize: 13)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(child: _backupBtn('Backup Now', Icons.backup_outlined)),
+                        const SizedBox(width: 8),
+                        Expanded(child: _backupBtn('Restore', Icons.restore_outlined)),
+                      ],
+                    ),
+                  ],
                 ),
-              );
-            }),
-            _sectionTitle('Bottom Bar Edit - শুধু Admin পারবে'),
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: ListTile(
-                title: const Text('Home, Production, Team, Profile'),
-                subtitle: const Text('সর্বোচ্চ ৫টা, ৪টা হলে সবচেয়ে সুন্দর দেখায়। Team বাদ দিয়ে Messages যোগ করা যাবে।'),
-                trailing: const Icon(Icons.edit, color: Color(0xFFD4AF37)),
-                onTap: () {},
               ),
-            ),
-            _sectionTitle('কোম্পানি - শুধু তুমি বদলাতে পারবা'),
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: ListTile(
-                title: const Text('কোম্পানি যোগ / বাদ / নাম বদলানো'),
-                subtitle: const Text('অন্য কেউ কোম্পানি যোগ, বাদ, বদলাতে পারবে না।'),
-                trailing: const Icon(Icons.business, color: Color(0xFFD4AF37)),
-                onTap: () {},
-              ),
-            ),
-            const SizedBox(height: 20),
+            ],
+
+            if (_tab == 3) ...[
+              const Text('Audit Log', style: TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 17)),
+              const SizedBox(height: 10),
+              ..._audit.map((a) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: KormiCard(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: KormiColors.navy.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.history_outlined, color: KormiColors.navy, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(a['action']!, style: const TextStyle(fontWeight: FontWeight.bold, color: KormiColors.navy, fontSize: 14)),
+                                Text('By ${a['by']} • ${a['time']}', style: const TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )),
+              const SizedBox(height: 8),
+              const Text('সব Action Audit Log-এ Save থাকে। কে কী করলো Admin দেখতে পারবে।',
+                  textAlign: TextAlign.center, style: TextStyle(color: KormiColors.textGrey, fontSize: 12)),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _tabBtn(String label, int index) {
+    final active = _tab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _tab = index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: active ? KormiColors.navy : Colors.transparent,
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Center(
+            child: Text(label,
+                style: TextStyle(
+                    color: active ? KormiColors.goldLight : KormiColors.textGrey,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _backupBtn(String label, IconData icon) {
+    return OutlinedButton.icon(
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$label - Backup তৈরি হচ্ছে...')));
+      },
+      icon: Icon(icon, size: 18, color: KormiColors.navy),
+      label: Text(label, style: const TextStyle(color: KormiColors.navy, fontWeight: FontWeight.bold, fontSize: 13)),
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: KormiColors.border),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        padding: const EdgeInsets.symmetric(vertical: 11),
       ),
     );
   }
